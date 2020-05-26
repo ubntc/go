@@ -1,2 +1,2 @@
-# go
-Go Examples for Learning and Teaching Go
+# This is our Go School
+Here we collect examples for learning and teaching Go.
