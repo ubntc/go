@@ -18,3 +18,7 @@ test-display:
 
 test-corruption:
 	go run corruption/corruption.go
+
+test-foreach:
+	go test -bench="ForEach*" ./generics/...
+	go test -bench="Loop*"    ./generics/...
