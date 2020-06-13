@@ -1,24 +1,39 @@
-EXAMPLES = bogus corruption display
-TESTS    = $(addprefix test-,$(EXAMPLES))
+# This Makefile implements basic build and test actions for the projects.
+# It tests and covers Go code per project, using the projects own `Makefile`,
+# or via regular `go test` commands, or using the `./scripts`.
 
-.PHONY: all vars test $(TESTS)
+.PHONY: all help test cover
 
-all: vars $(TESTS)
+PACKAGES = errchan cli playground
+TARGETS  = cli
 
-vars:
-	# dirs:  $(EXAMPLES)
-	# tests: $(TESTS)
+_TESTS    = $(addsuffix -test,  $(PACKAGES))
+_COVERS   = $(addsuffix -cover, $(PACKAGES))
+_MAKES    = $(addsuffix -make,  $(TARGETS))
 
-test-bogus:
-	go run bogus/bogus.go
-	go run -race bogus/bogus.go -bogus 2>&1 | grep "DATA RACE"
+help:
+	# usage: make TARGET PACKAGES="dir1 dir2 ..."
+	# targets:
+	#
+	#   test      run tests for PACKAGES=$(PACKAGES)
+	#   cover     check and update test coverage for PACKAGES=$(PACKAGES)
+	#   all       run `make` in subdirs for TARGETS=$(TARGETS)
 
-test-display:
-	go run display/display.go -t 0.5s
+test: $(_TESTS)
+cover: $(_COVERS)
+all: $(_MAKES)
 
-test-corruption:
-	go run corruption/corruption.go
+# Generic go test to test all subpackages.
+%-test: %;
+	go test -race $(GOCOVER_ARGS) ./$</...
+	go vet  ./$</...
 
-test-foreach:
-	go test -bench="ForEach*" ./generics/...
-	go test -bench="Loop*"    ./generics/...
+COVERSH_CMD = $(MAKE) -C $< cover COVERSH=$(CURDIR)/scripts/cover.sh
+# The above COVERSH_CMD is used for projects that have their own Makefile.
+# Projects without Makefile use `go test -cover` to compute test coverage.
+%-cover: GOCOVER_ARGS = -cover -coverprofile=.cache/$<.out 
+%-cover: %
+	if test -e $</Makefile; then $(COVERSH_CMD); else $(MAKE) $<-test; fi
+
+# Runs the default make target of a project.
+%-make: %; $(MAKE) -C $<

@@ -1,7 +1,12 @@
-# Go Playground
+# Ubntc Go Projects Monorepo
 
-This playground contains code experiments for learning to write better Go
-in the context of this project.
+This repository hosts the following projects.
 
-The examples here are kept for self-learning and for teaching others about
-the pitfalls of Go concurrency and how to solve them.
+## [Playground: ubntc/go/playground](/playground)
+Contains experiments and code for learning and understanding the pitfalls of Go, esp. regarding concurrency.
+
+## [Go-cli: ubntc/go/cli](/cli)
+Basic CLI-enhancements for your Go-servies, incl. input commands, human-friendly logging, and OS-signal handling.
+
+## [Go-scripts: ubntc/go/scripts](/scripts)
+Build scrips and utils for managing Go code in this monorepo.
