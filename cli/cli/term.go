@@ -61,10 +61,11 @@ func (c *Term) IsDebug() bool {
 }
 
 // SetDebug enabled or disables debug output on stderr.
-func (c *Term) SetDebug(v bool) {
+func (c *Term) SetDebug(v bool) *Term {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	term.debug = v
+	return c
 }
 
 // IsVerbose returns the verbose state.
@@ -75,10 +76,11 @@ func (c *Term) IsVerbose() bool {
 }
 
 // SetVerbose enabled or disables verbose output on stderr.
-func (c *Term) SetVerbose(v bool) {
+func (c *Term) SetVerbose(v bool) *Term {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	term.verbose = v
+	return c
 }
 
 // SetMessage set the promt message.
@@ -103,10 +105,12 @@ func (c *Term) WrapOutput(w io.Writer) {
 }
 
 var reLineEnd = regexp.MustCompile("\n$")
-var rePendingLine = regexp.MustCompile("[^\n]*$")
+var rePendingNL = regexp.MustCompile("[^\n]*$")
+var reStartCR = regexp.MustCompile("[\r]*")
 var reNLCR = regexp.MustCompile("[\n\r]*")
+var reNLWithoutCR = regexp.MustCompile("[\n][^\r]*")
 
-// TODO: what is faster regex check or last bytes check?
+// TODO: what is safer/faster regex check or last bytes check?
 // var nlByte = []byte("\n")[0]
 // var crByte = []byte("\r")[0]
 
@@ -133,11 +137,16 @@ func (c *Term) Println(s string) (int, error) {
 
 // printableOutput returns completed and pending lines in the output buffer.
 func (c *Term) printableOutput() (output, pending []byte) {
-	loc := rePendingLine.FindIndex(c.buf)
-	if loc == nil {
+	locNL := rePendingNL.FindIndex(c.buf)
+	if locNL == nil {
 		return c.buf, nil
 	}
-	return c.buf[0:loc[0]], c.buf[loc[0]:loc[1]]
+	i := locNL[0]
+	locCR := reStartCR.FindIndex(c.buf[i:])
+	if locCR == nil {
+		i = locNL[0] + locCR[0]
+	}
+	return c.buf[0:i], c.buf[i:]
 }
 
 // Sync flushes buffers (appending newlines if needed) and clears all output.
@@ -198,9 +207,26 @@ func (c *Term) write() {
 	if c.debug && end != CR && end != NL {
 		panic(fmt.Errorf("invalid buffer data: %q", buf))
 	}
-	if c.raw && end == NL {
+	if c.raw {
 		// TODO: do we need to add CR for each inline NL?
-		buf = append(buf, []byte("\r")...)
+		// Yes! ;)
+		locs := reNLWithoutCR.FindAllIndex(buf, -1)
+		if len(locs) > 0 {
+			b := make([]byte, len(buf)+len(locs))
+			loc1 := 0
+			for _, loc := range locs {
+				b = append(b, buf[loc1:loc[0]]...)
+				b = append(b, []byte("\n\r")...)
+				loc1 = loc[0] + 1
+				// Since loc[0] is always a valid byte, loc[0] + 1 is at most == len(buf),
+				// which is a valid range index for a slice
+			}
+			buf = append(b, buf[loc1:]...)
+			if len(locs) > 1 && c.debug && c.verbose {
+				// Note: len(locs) == 1 is the default case, no need to log it.
+				buf = append(buf, []byte(fmt.Sprintf("injected %d CR\n\r", len(locs)))...)
+			}
+		}
 	}
 
 	buf = append(buf, []byte(c.statusLine)...)

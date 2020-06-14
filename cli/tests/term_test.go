@@ -32,11 +32,6 @@ func TestPrint(t *testing.T) {
 	assert.Equal(t, 5, i)
 }
 
-func TestRawMode(t *testing.T) {
-	// TODO: find a way to test raw term mode
-	assert.Equal(t, false, cli.GetTerm().IsRaw())
-}
-
 func TestQuitCommandsWithoutClock(t *testing.T) {
 	ctx, cancel := cli.WithSigWait(context.Background(), cli.WithQuit(), cli.WithoutClock())
 	assert.Len(t, cli.GetCommands(), 4)
@@ -184,4 +179,10 @@ func TestWrapStderr(t *testing.T) {
 		fmt.Println("test")
 	})
 	assert.Equal(t, v, "test\n")
+}
+
+func TestSliceIndexPlus1(t *testing.T) {
+	var buf = []byte("abc")
+	assert.Len(t, buf, 3)
+	assert.Len(t, buf[len(buf):], 0)
 }

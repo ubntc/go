@@ -7,6 +7,10 @@ clean:
 test:
 	go test -race -timeout 3s ./...
 	go vet ./...
+	# INTERACTIVE MODE TEST
+	go run -race tests/cmd/rawtest.go -i
+	# NON-INTERACTIVE MODE TEST
+	echo 1 | go run -race tests/cmd/rawtest.go
 
 debug:
 	go test -race -failfast -v -timeout 3s ./...

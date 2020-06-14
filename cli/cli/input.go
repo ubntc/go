@@ -3,7 +3,9 @@ package cli
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -28,26 +30,43 @@ func termRestore(state *terminal.State) error {
 // RestoreFunc restores the terminal.
 type RestoreFunc func() error
 
-// ClaimTerminal sets the terminal to raw input mode, waits for the given
-// context to cancel, and eventually resets the terminal to normal mode.
-func ClaimTerminal() (RestoreFunc, error) {
-	PromptVerbose("using raw terminal")
-	state, err := termMakeRaw()
-	if err != nil {
-		return nil, err
-	}
-	GetTerm().setRaw(true)
-
-	// Terminal is in raw mode now. Let's ensure it can return to normal.
+func restoreFunc(state *terminal.State) RestoreFunc {
 	return func() error {
-		PromptVerbose("restoring terminal")
 		if err := termRestore(state); err != nil {
+			log.Println("failed to restore terminal, error:", err)
 			return err
 		}
 		GetTerm().setRaw(false)
-
+		log.Println("restored terminal")
 		return nil
-	}, nil
+	}
+}
+
+// ClaimTerminal sets the terminal to raw input mode and returns a RestoreFunc
+// for resetting the terminal to normal mode.
+func ClaimTerminal() (RestoreFunc, error) {
+	state, err := termMakeRaw()
+	if err == nil {
+		t := GetTerm()
+		t.setRaw(true)
+		log.Println("claimed terminal")
+		if t.IsDebug() && t.IsVerbose() {
+			t.Println(fmt.Sprintf("---termios state---\n\r%+v\n\r------", state))
+		}
+	} else {
+		log.Println("failed to claim terminal")
+	}
+
+	var restore RestoreFunc
+	// If terminal is in raw mode now, let's ensure it can return to normal.
+	if state != nil {
+		restore = restoreFunc(state)
+		if err != nil {
+			log.Println("old terminal State is not nil, creating RestoreFunc despite error")
+		}
+	}
+
+	return restore, err
 }
 
 // InputChan listens for runes on stdin
@@ -85,8 +104,9 @@ func ProcessInput(ctx context.Context, file *os.File, commands Commands) {
 	if file == os.Stdin {
 		restore, err := ClaimTerminal()
 		if err != nil {
-			PromptVerbose("failed to switch to terminal mode, error=%s", err)
-		} else {
+			PromptVerbose("failed to claim terminal, error=%s", err.Error())
+		}
+		if restore != nil {
 			defer restore()
 		}
 	}
