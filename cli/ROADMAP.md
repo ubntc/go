@@ -9,14 +9,14 @@
 
 ### Logging
 * [x] Define log + time format
-* [x] Setup Std Log
+* [x] Setup Stdlog
 * [x] Setup Zerolog
 * [ ] Setup Zaplog
+* [ ] Auto-Wrap Stdlog
 * [x] Examples + Readme
-* [ ] Define how to interact with std `Logger` interface and create "Anylogger" Setup
 
 ### Signals 
-* [x] Catch + terminate on `os.Signal` and stop app via closing context
+* [x] Catch + terminate on `os.Signal` and stop app by closing the context
 * [x] Ensure graceful shutdown after closing context
 * [ ] Test external signal handling (TERM, KILL)
 * [ ] Test user interruption handling (SIGINT, ^C)
@@ -33,13 +33,19 @@
 ### Compatibility
 * [x] Runs on Desktop Linux
 * [x] Runs on RaspberryPi
-* [ ] Runs on Windows
-* [ ] Runs on Mac
-* [ ] Runs in GCP 
+* [ ] Runs in Docker
+* [ ] Runs on Mac (iterm)
+* [ ] Runs on Windows (cmd)
+* [ ] Runs in GCP
 
 ## Nicetohaves
-* [ ] Setup logrus
-* [ ] Setup logger 1
-* [ ] Setup logger 2
-* [ ] Setup logger 3
+* [x] Run scripts by chaining commands
+* [ ] Generic logger wrapping (e.g., use zero with wrapped std + zap)
+* [ ] Define how to interact with generic `Logger` 
+* [ ] Generic Setup for any `Logger`
+* [ ] Setup for logrus
+* [ ] More supported loggers
 * [ ] Detect unicode support and fallback to ASCII clock
+* [ ] Use go-termios directly to improve restoring terminal state
+* [ ] Detect broken terminal state and repair
+* [ ] Runs on all Go-supported platforms
