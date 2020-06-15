@@ -32,6 +32,17 @@ func TestPrint(t *testing.T) {
 	assert.Equal(t, 5, i)
 }
 
+func TestHelp(t *testing.T) {
+	cli.SetCommands(cli.Commands{cli.Command{Name: "X", Key: 'x'}})
+	term := cli.GetTerm()
+	w := &LogWriter{}
+	term.WrapOutput(w)
+	term.Help()
+	s := w.String()
+	assert.Contains(t, s, "Key: 'x'")
+	assert.Contains(t, s, "Command: X")
+}
+
 func TestQuitCommandsWithoutClock(t *testing.T) {
 	ctx, cancel := cli.WithSigWait(context.Background(), cli.WithQuit(), cli.WithoutClock())
 	assert.Len(t, cli.GetCommands(), 4)

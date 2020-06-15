@@ -97,6 +97,12 @@ func (c *Term) GetMessage() string {
 	return term.message
 }
 
+// Help prints and prompts help for the configured Commands.
+func (c *Term) Help() {
+	c.SetMessage(GetCommands().String())
+	c.Println(GetCommands().Help())
+}
+
 // WrapOutput wraps the given output.
 func (c *Term) WrapOutput(w io.Writer) {
 	c.mu.Lock()

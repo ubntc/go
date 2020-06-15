@@ -12,11 +12,13 @@ import (
 	"github.com/ubntc/go/cli/loggers/zerologger"
 )
 
-var interactive = flag.Bool("i", false, "interactive mode")
-var debug = flag.Bool("debug", false, "debug mode")
-var noClock = flag.Bool("n", false, "don't display clock")
-var verbose = flag.Bool("v", false, "vebose output and prompts")
-var demo = flag.String("demo", "", "script sequence of input keys and delays")
+var (
+	interactive = flag.Bool("i", false, "interactive mode")
+	debug       = flag.Bool("debug", false, "debug mode")
+	noClock     = flag.Bool("n", false, "don't display clock")
+	verbose     = flag.Bool("v", false, "vebose output and prompts")
+	demo        = flag.String("demo", "", "script sequence of input keys and delays")
+)
 
 // Server is an dummy server.
 type Server struct {
@@ -35,11 +37,11 @@ func (s *Server) Serve(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			s.SetStatus("dead")
-			s.Status()
+			s.LogStatus()
 			return
 		case <-time.After(s.logInterval):
 			s.SetStatus("active")
-			s.Status()
+			s.LogStatus()
 			time.Sleep(s.logInterval / 5)
 		}
 	}
@@ -57,8 +59,8 @@ func (s *Server) SetStatus(status string) {
 	s.status = status
 }
 
-// Status logs the server status.
-func (s *Server) Status() {
+// LogStatus logs the server status.
+func (s *Server) LogStatus() {
 	s.RLock()
 	defer s.RUnlock()
 	log.Print("server is " + s.status)
@@ -89,7 +91,7 @@ func main() {
 		cli.SetupLogging(zerologger.Setup)
 		opt = append(opt, cli.WithInput(cli.Commands{
 			{Name: "help", Key: 'h', Fn: help},
-			{Name: "status", Key: 's', Fn: srv.Status},
+			{Name: "status", Key: 's', Fn: srv.LogStatus},
 		}))
 	} else {
 		// use unix time if running on non-interactive server

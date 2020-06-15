@@ -30,7 +30,7 @@ func (c *ConsoleWriter) Write(p []byte) (n int, err error) {
 	return c.out.Write([]byte(fmt.Sprintf("%s %s %s", t, s, p)))
 }
 
-// Setup sets up a the standard logger.
+// Setup sets up the standard logger.
 func Setup(out io.Writer, timeFormat string) error {
 	// setup a ConsoleWriter to add colored timestamp and level
 	log.SetOutput(&ConsoleWriter{out, timeFormat})
