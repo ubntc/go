@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/ubntc/go-cli)](https://goreportcard.com/report/github.com/ubntc/go-cli)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ubntc/go/cli)](https://goreportcard.com/report/github.com/ubntc/go/cli)
 [![cover-badge](https://img.shields.io/badge/coverage-89%25-brightgreen.svg?longCache=true&style=flat)](Makefile#22)
 
 # Go-cli
