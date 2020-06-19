@@ -12,14 +12,6 @@ import (
 	"github.com/ubntc/go/cli/loggers/zerologger"
 )
 
-var (
-	interactive = flag.Bool("i", false, "interactive mode")
-	debug       = flag.Bool("debug", false, "debug mode")
-	noClock     = flag.Bool("n", false, "don't display clock")
-	verbose     = flag.Bool("v", false, "vebose output and prompts")
-	demo        = flag.String("demo", "", "script sequence of input keys and delays")
-)
-
 // Server is an dummy server.
 type Server struct {
 	sync.WaitGroup
@@ -73,6 +65,14 @@ func help() {
 }
 
 func main() {
+	var (
+		interactive = flag.Bool("i", false, "interactive mode")
+		debug       = flag.Bool("debug", false, "debug mode")
+		noClock     = flag.Bool("n", false, "don't display clock")
+		verbose     = flag.Bool("v", false, "vebose output and prompts")
+		demo        = flag.String("demo", "", "script sequence of input keys and delays")
+	)
+
 	flag.Parse()
 	cli.GetTerm().SetDebug(*debug)
 	cli.GetTerm().SetVerbose(*verbose)

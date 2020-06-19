@@ -11,9 +11,6 @@ import (
 	"github.com/ubntc/go/cli/loggers/stdlogger"
 )
 
-var interactive = flag.Bool("i", false, "interactive mode")
-var noClock = flag.Bool("n", false, "don't display the clock")
-
 // Server is an dummy server.
 type Server struct {
 	sync.WaitGroup
@@ -40,6 +37,10 @@ func (s *Server) Shutdown() {
 }
 
 func main() {
+	var (
+		interactive = flag.Bool("i", false, "interactive mode")
+		noClock     = flag.Bool("n", false, "don't display the clock")
+	)
 	flag.Parse()
 
 	var opt []cli.Option
