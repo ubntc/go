@@ -20,6 +20,11 @@ testpkg() {
         run go test -race $GOTEST_ARGS $tests 2>&1 | tee $prefix.log
         run go vet $tests
     fi
+
+    if test -e "$pkg/go.mod" && ! test -f "$pkg/LICENSE"; then
+        echo "stand-alone package $pkg does not have hard copied LICENSE file"
+        return 1
+    fi
 }
 
 run() { echo "$*"; "$@"; }
