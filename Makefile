@@ -21,16 +21,13 @@ test:    $(addsuffix -test,    $(PACKAGES))
 cover:   $(addsuffix -cover,   $(PACKAGES))
 make:    $(addsuffix -make,    $(TARGETS))
 tag:     $(addsuffix -tag,     $(TARGETS))
-publish: $(addsuffix -publish, $(TARGETS))
+refresh: $(addsuffix -refresh, $(TARGETS))
 
-# Generic go test to test all subpackages.
+# Generic package testing and coverage
 %-test:    %; GOTEST_ARGS="$(GOTEST_ARGS)" scripts/test.sh $<
 %-cover:   %; GOTEST_ARGS="$(GOTEST_ARGS)" scripts/cover.sh $<
+
+# Generic build targets and version management
 %-make:    %; $(MAKE) -C $<
-
-# Version management
-_RAWTAG = $(shell git tag --list --no-column --sort=authordate '$</v*' | tail -n 1 | grep '^$</v.*$$')
-_TAG    = $(shell echo '$(_RAWTAG)' | cut -d '/' -f 2)
-
-%-tag:     %; # TODO: use bumpversion lib, current TAG=$(_TAG)
-%-publish: %; echo curl https://sum.golang.org/lookup/github.com/go/$<@$(_TAG)
+%-tag:     %; # TODO: use bumpversion tool + push it
+%-refresh: %; scripts/version.sh $<
