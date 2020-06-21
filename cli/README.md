@@ -8,7 +8,7 @@
 Go-cli provides common terminal application features for your Go application.
 
 The project is a collection of [DRY code](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)
-for quickly adding common usability features to your commandline application.
+for quickly adding common usability features to your command-line application.
 To keep the project (and your binaries) small, the scope of this project is limited to the
 following three features.
 
@@ -36,7 +36,7 @@ and 3-letter log levels for best readability.
   > 2020-05-18 20:48:31 DBG message b key=value2
 ```
 The setup code for the supported [loggers]() is in separate packages to reduce binary size of the compiled Go applications.
-The currently suppported loggers are `zerolog` and the standard `log`.
+The currently supported loggers are `zerolog` and the standard `log`.
 
 ## 3. Terminal Input
 Handle user input in the terminal in combination with signal-waiting functionality. 
