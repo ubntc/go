@@ -3,6 +3,8 @@
 
 # Go-cli
 
+[![Go-cli Logo](resources/go-cli-logo.svg)](https://github.com/ubntc/go/blob/master/cli)
+
 Go-cli provides common terminal application features for your Go application.
 
 The project is a collection of [DRY code](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)

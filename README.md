@@ -1,4 +1,4 @@
-# Ubntc Go Projects Monorepo
+# Ubntc Go Projects
 
 This repository hosts the following projects.
 
@@ -8,6 +8,9 @@ OS-signal handling.
 
 ## [Go-scripts: ubntc/go/scripts](/scripts)
 Reusable build scrips and utils for managing Go code in this monorepo.
+
+## [Gophers: ubntc/go/gophers](/gophers)
+Gophers art and vector graphics.
 
 ## [Playground: ubntc/go/playground](/playground)
 Experiments and code for learning and understanding the pitfalls of Go, esp. regarding concurrency.
