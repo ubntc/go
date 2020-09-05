@@ -1,5 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/ubntc/go/batsub)](https://goreportcard.com/report/github.com/ubntc/go/batsub)
-[![cover-badge](https://img.shields.io/badge/coverage-89%25-brightgreen.svg?longCache=true&style=flat)](Makefile#9)
+[![cover-badge](https://img.shields.io/badge/coverage-96%25-brightgreen.svg?longCache=true&style=flat)](Makefile#9)
 
 # Batched PubSub Reader
 This package implements batched reading of messages from `pubsub.Subscriptions`.
