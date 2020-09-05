@@ -5,7 +5,7 @@ test:
 	go test -race -timeout 3s ./...
 	go vet ./...
 
-COVERSH=echo
+COVERSH=../scripts/cover.sh
 cover:
 	$(COVERSH) .
 

@@ -3,7 +3,7 @@
 .PHONY: help debug test cover make tag refresh
 
 PACKAGES = errchan cli playground batsub
-TARGETS  = cli
+TARGETS  = cli batsub
 
 help:
 	# usage: make TARGET PACKAGES="dir1 dir2 ..."
