@@ -8,11 +8,11 @@ based on a given batch capacity or batching interval.
 
 ## Usage
 
-```go
+```golang
 capacity := 100
 interval := time.Second
 
-sub := NewBatchedSubscription(subscription, capacity, interval)
+sub := batsub.NewBatchedSubscription(subscription, capacity, interval)
 err := sub.ReceiveBatch(ctx, func(ctx context.Context, messages []*pubsub.Message){
     // handle batch of messages using a batch-processing library
     errors := mylib.BatchProcessMessages(messages)
@@ -25,3 +25,5 @@ err := sub.ReceiveBatch(ctx, func(ctx context.Context, messages []*pubsub.Messag
     }
 })
 ```
+
+Also see the [PubSub to BigQuery](_examples/pubsub-to-bq) example.

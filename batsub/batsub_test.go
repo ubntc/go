@@ -45,7 +45,7 @@ func TestBatchedSubscription(t *testing.T) {
 		"small cap": {100, 1, time.Second, 0, 100, nil},
 		"big cap":   {100, 1000, time.Second, 0, 1, nil},
 		// special cases
-		"timeout":  {10, 100, 10 * time.Microsecond, 100 * time.Microsecond, 10, nil},
+		"timeout":  {2, 10, time.Microsecond, time.Millisecond, 2, nil},
 		"zero len": {0, 10, time.Second, 0, 0, nil},
 		"zero cap": {10, 0, time.Second, 0, 10, nil},
 		// NOTE: A zero capacity case is valid since Go's `append` will add missing slice capacity
