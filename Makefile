@@ -1,10 +1,8 @@
-# This Makefile implements basic build and test actions for the projects.
-# It tests and covers Go code per project, using the projects own `Makefile`,
-# or via regular `go test` commands, or using the `./scripts`.
+# This Makefile implements basic build and test actions for the ubntc/go projects.
 
-.PHONY: help debug test cover make tag publish
+.PHONY: help debug test cover make tag refresh
 
-PACKAGES = errchan cli playground
+PACKAGES = errchan cli playground batsub
 TARGETS  = cli
 
 help:

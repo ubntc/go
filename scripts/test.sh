@@ -1,6 +1,11 @@
 #/usr/bin/env bash
 set -e
 
+# testpkg tests a given `pkg` using the package's `Makefile` or directly using `go test` and `go vet`.
+#
+#   @param:  pkg           name of the package
+#   @env:    GOTEST_ARGS   extra test arguments for `go test` or `make test GOTEST_ARGS=GOTEST_ARGS`
+#
 testpkg() {
     set -e
     pkg="$1"
@@ -22,11 +27,12 @@ testpkg() {
     fi
 
     if test -e "$pkg/go.mod" && ! test -f "$pkg/LICENSE"; then
-        echo "stand-alone package $pkg does not have hard copied LICENSE file"
+        echo "ERROR: standalone package $pkg needs a hard-copied LICENSE file"
         return 1
     fi
 }
 
+# run prints a command before running it, similar to how `make` echos commands.
 run() { echo "$*"; "$@"; }
 
 for pkg in $*; do testpkg "$pkg"; done

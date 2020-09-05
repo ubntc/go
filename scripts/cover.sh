@@ -19,20 +19,20 @@ update_readme() {
 }
 
 coverpkg=""  # subpackages to be covered
-packages=""  # stand-alone packages to be covered separately
+packages=""  # standalone packages to be covered separately
 script=`readlink -f "$0"`
 prefix=.cache/cover
 mkdir -p .cache
 
 for p in $*; do
-    if test -e "$p/go.mod"
+    if test -e "$p/go.mod" && test "$p" != .
     then packages="$packages $p"
     else coverpkg="$coverpkg,./$p/..."
     fi
 done
 
 for p in $packages; do
-    echo "covering stand-alone package $p"
+    echo "covering standalone package $p"
     if test -e Makefile
     then make -C $p cover COVERSH=$script
     else cd $p && pkg=./... prefix=.cache/"$p-cover" cover
