@@ -1,7 +1,7 @@
 .PHONY: all clean test debug resources done cover cover-check
 all: test cover resources
 
-clean: 
+clean:
 	rm resources/go-cli*.cast resources/go-cli*.svg .cache/cover*
 
 test:
@@ -22,9 +22,8 @@ done:
 resources:
 	$(MAKE) -C $@
 
-COVERSH=echo
 cover:
-	$(COVERSH) cli loggers
+	../scripts/cover.sh cli loggers
 
 cover-check: cover
-	go tool cover -html=.cache/cover.out
+	go tool cover -html=.cache/cover.profile

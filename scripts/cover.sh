@@ -1,26 +1,17 @@
 #/usr/bin/env bash
 set -e
 
-cover() { go test ./... $GOTEST_ARGS -coverpkg "$pkg" -coverprofile=$prefix.out   | tee $prefix.log; }
-label() { grep -o 'coverage: [^ \.]*' $prefix.log | sed -e 's/: /-/g' | tail -n 1 | tee $prefix.txt; }
-link()  { (echo -n "Makefile#"; grep -no "^cover:" Makefile | grep -o '[0-9]*')   | tee $prefix.src; }
+run(){ echo "$*" 1>&2; "$@"; }
 
-update_readme() {
-    set -e
-    if test -e README.md; then
-        if test -e "Makefile"
-        then link=$(link)
-        else link=
-        fi
-        label=$(label)
-        echo "setting label=$label and link=$link in README.md"
-        sed -i -e "s/coverage-[0-9]*\(.*\)(.*)$/$label\1($link)/g" README.md
-    fi
+cover() {
+    run go test $GOTEST_ARGS -coverpkg "$pkg" -coverprofile=$prefix.profile ./...
+    prefix=$prefix $here/badges.sh
 }
 
-coverpkg=""  # subpackages to be covered
+coverpkg="."  # subpackages to be covered
 packages=""  # standalone packages to be covered separately
-script=`readlink -f "$0"`
+COVERSH=`readlink -f "$0"`
+here=`dirname $COVERSH`
 prefix=.cache/cover
 mkdir -p .cache
 
@@ -33,9 +24,9 @@ done
 
 for p in $packages; do
     echo "covering standalone package $p"
-    if test -e Makefile
-    then make -C $p cover COVERSH=$script
-    else cd $p && pkg=./... prefix=.cache/"$p-cover" cover
+    if test -e Makefile && grep -q "^cover:" Makefile
+    then make -C $p cover COVERSH=$COVERSH
+    else cd $p && pkg=./... cover
     fi
 done
 
@@ -43,5 +34,4 @@ if test -n "$coverpkg"; then
     echo "covering packages $coverpkg"
     test -z "$GOTEST_ARGS" || echo "using GOTEST_ARGS=$GOTEST_ARGS as additional cover arguments"
     pkg=$coverpkg cover
-    update_readme
 fi
