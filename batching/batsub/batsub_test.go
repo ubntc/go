@@ -1,61 +1,37 @@
-package batbq_test
+package batsub_test
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"testing"
 	"time"
 
-	"cloud.google.com/go/bigquery"
+	"cloud.google.com/go/pubsub"
 	"github.com/stretchr/testify/assert"
-	"github.com/ubntc/go/batchers/batbq"
+	"github.com/ubntc/go/batching/batsub"
 )
 
-type row struct {
-	ID string
+type source struct {
+	messages  []*pubsub.Message
+	sendDelay time.Duration
+	done      chan struct{}
 }
 
-func (m *row) Save() (row map[string]bigquery.Value, insertID string, err error) {
-	v := bigquery.Value(m.ID)
-	return map[string]bigquery.Value{"id": v}, m.ID, nil
-}
-
-type putter struct {
-	table      []map[string]bigquery.Value
-	numBatches int
-}
-
-func (p *putter) Put(ctx context.Context, src interface{}) error {
-	rows := src.([]*bigquery.StructSaver)
-	for _, v := range rows {
-		row, _, _ := v.Save()
-		p.table = append(p.table, row)
-	}
-	p.numBatches++
+// Receive is a pubsub-like Receive function to acquire messages from the source.
+func (rec *source) Receive(ctx context.Context, f func(context.Context, *pubsub.Message)) error {
+	go func() {
+		for _, m := range rec.messages {
+			f(ctx, m)
+			time.Sleep(rec.sendDelay)
+		}
+		close(rec.done)
+	}()
+	<-rec.done
 	return nil
 }
 
-type source struct {
-	messages  []*batbq.LogMessage
-	sendDelay time.Duration
-}
-
-func (rec *source) Chan() <-chan batbq.Message {
-	ch := make(chan batbq.Message, 100)
-	go func() {
-		for _, m := range rec.messages {
-			ch <- m
-			time.Sleep(rec.sendDelay)
-		}
-		close(ch)
-		log.Print("send chan closed")
-	}()
-	return ch
-}
-
-func TestInsertBatcher(t *testing.T) {
+func TestBatchedSubscription(t *testing.T) {
 	type Spec struct {
 		len        int           // number of test messages
 		cap        int           // batch capacity
@@ -87,24 +63,33 @@ func TestInsertBatcher(t *testing.T) {
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 
-				data := make([]*batbq.LogMessage, 0, spec.len)
+				data := make([]*pubsub.Message, 0, spec.len)
 				for i := 0; i < spec.len; i++ {
-					row := bigquery.StructSaver{InsertID: fmt.Sprint(i)}
-					data = append(data, &batbq.LogMessage{&row})
+					data = append(data, &pubsub.Message{ID: fmt.Sprint(i)})
 				}
 				assert.Len(t, data, spec.len)
 
-				snd := &source{
+				rec := &source{
 					messages:  data,
+					done:      make(chan struct{}),
 					sendDelay: spec.sendDelay,
 				}
-				input := snd.Chan()
-				output := &putter{}
-				batcher := batbq.NewInsertBatcher(spec.cap, spec.dur, 1)
-				batcher.Process(ctx, input, output)
+				sub := batsub.NewBatchedSubscription(rec, spec.cap, spec.dur)
 
-				assert.Len(t, output.table, spec.len)
-				assert.Equal(t, spec.expBatches, output.numBatches)
+				var mu sync.Mutex
+				var result []*pubsub.Message
+				var numBatches = 0
+				receive := func(ctx context.Context, messages []*pubsub.Message) {
+					mu.Lock()
+					defer mu.Unlock()
+					numBatches++
+					result = append(result, messages...)
+				}
+
+				err := sub.ReceiveBatches(ctx, receive)
+				assert.NoError(t, err)
+				assert.Len(t, result, spec.len)
+				assert.Equal(t, spec.expBatches, numBatches)
 			})
 		}(name, spec)
 	}

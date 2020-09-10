@@ -1,4 +1,4 @@
-module github.com/ubntc/go/batchers/batbq
+module github.com/ubntc/go/batching/batbq
 
 go 1.14
 

@@ -10,7 +10,7 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"cloud.google.com/go/pubsub"
-	"github.com/ubntc/go/batchers/batbq"
+	"github.com/ubntc/go/batching/batbq"
 )
 
 // Click describes the context of a click on an Ad.

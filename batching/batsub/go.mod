@@ -1,4 +1,4 @@
-module github.com/ubntc/go/batsub
+module github.com/ubntc/go/batching/batsub
 
 go 1.14
 
