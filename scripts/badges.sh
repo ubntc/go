@@ -25,7 +25,7 @@ update_readme() {
         echo "setting label=$label and link=$link in $PWD/README.md"
         sed -i -e "s/coverage-[0-9\.]*%25\(.*\)(.*)$/coverage-$label%25\1($link)/g" README.md
         echo -n "resulting badge: "
-        if !grep -e "coverage-[0-9]\+%25" README.md
+        if ! grep -e "coverage-[0-9]\+%25" README.md
         then echo "no badge found"
         fi
     fi

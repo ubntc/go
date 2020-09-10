@@ -34,11 +34,11 @@ func NewBatchedSubscription(receiver Receiver, capacity int, flushInterval time.
 // BatchFunc handles a batch of messages.
 type BatchFunc func(ctx context.Context, messages []*pubsub.Message)
 
-// ReceiveBatch calls f with the outstanding batched messages from the subscription.
+// ReceiveBatches calls f with the outstanding batched messages from the subscription.
 //
 // Basic Example:
 //
-// err := sub.ReceiveBatch(ctx, func(ctx context.Context, messages []*pubsub.Message){
+// err := sub.ReceiveBatches(ctx, func(ctx context.Context, messages []*pubsub.Message){
 //     for i, m := range messages {
 //         // TODO: handle message
 //	       m.Ack()
@@ -47,7 +47,7 @@ type BatchFunc func(ctx context.Context, messages []*pubsub.Message)
 //
 // Batch Processing Example:
 //
-// err := sub.ReceiveBatch(ctx, func(ctx context.Context, messages []*pubsub.Message){
+// err := sub.ReceiveBatches(ctx, func(ctx context.Context, messages []*pubsub.Message){
 //
 //     // handle batch of messages using a batch-processing library
 //     errors := mylib.BatchProcessMessages(messages)
@@ -60,14 +60,14 @@ type BatchFunc func(ctx context.Context, messages []*pubsub.Message)
 //     }
 // })
 //
-func (sub *BatchedSubscription) ReceiveBatch(ctx context.Context, f BatchFunc) error {
+func (sub *BatchedSubscription) ReceiveBatches(ctx context.Context, f BatchFunc) error {
 	ch := make(chan *pubsub.Message, sub.capacity)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		tick := time.Tick(sub.flushInterval)
+
 		var batch []*pubsub.Message
 		flush := func() {
 			if len(batch) == 0 {
@@ -78,6 +78,7 @@ func (sub *BatchedSubscription) ReceiveBatch(ctx context.Context, f BatchFunc) e
 		}
 		defer flush()
 
+		tick := time.Tick(sub.flushInterval)
 		for {
 			select {
 			case <-tick:

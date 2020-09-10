@@ -1,5 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/ubntc/go/batsub)](https://goreportcard.com/report/github.com/ubntc/go/batsub)
-[![cover-badge](https://img.shields.io/badge/coverage-96%25-brightgreen.svg?longCache=true&style=flat)](Makefile#9)
+[![cover-badge](https://img.shields.io/badge/coverage-96%25-brightgreen.svg?longCache=true&style=flat)](Makefile#8)
 
 # Batched PubSub Reader
 This package implements batched reading of messages from a `pubsub.Subscription`.
@@ -26,4 +26,4 @@ err := sub.ReceiveBatch(ctx, func(ctx context.Context, messages []*pubsub.Messag
 })
 ```
 
-Also see the [PubSub to BigQuery](_examples/pubsub-to-bq) example.
+Also see the [PubSub to BigQuery](../_examples/pubsub-to-bq) example.
