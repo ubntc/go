@@ -45,8 +45,8 @@ func (ins *InsertBatcher) Process(ctx context.Context, input <-chan Message, out
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
+	wg.Add(ins.numWorkers)
 	for i := 0; i < ins.numWorkers; i++ {
-		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			Worker(ctx, ins, input, out)

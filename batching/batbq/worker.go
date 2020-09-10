@@ -2,6 +2,7 @@ package batbq
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 )
@@ -27,6 +28,9 @@ func Worker(ctx context.Context, ins *InsertBatcher, input <-chan Message, out P
 			defer wg.Done()        // allow the batcher to stop
 			defer ackLock.Unlock() // allow confirming the next batch
 			// TODO: handle insert errors
+			if err != nil {
+				log.Print(err)
+			}
 			for _, m := range messages {
 				m.Ack()
 			}

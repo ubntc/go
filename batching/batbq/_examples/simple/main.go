@@ -1,12 +1,5 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/ubntc/go/batcher/batbq)](https://goreportcard.com/report/github.com/ubntc/go/batcher/batbq)
-[![cover-badge](https://img.shields.io/badge/coverage-91%25-brightgreen.svg?longCache=true&style=flat)](Makefile#9)
+// This file provides the content for the README.md it must
 
-# Batched BigQuery Inserter
-This package implements batching of messages for the `bigquery.Inserter`.
-
-## Usage
-
-```golang
 package main
 
 import (
@@ -52,6 +45,3 @@ func main() {
 	}()
 	batcher.Process(ctx, input, output)
 }
-```
-
-Also see the [PubSub to BigQuery](_examples/pubsub-to-bq/main.go) example.

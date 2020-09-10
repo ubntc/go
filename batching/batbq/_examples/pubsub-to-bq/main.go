@@ -52,58 +52,10 @@ var clickSchema bigquery.Schema
 func init() {
 	var err error
 	clickSchema, err = bigquery.InferSchema(Click{})
-	if err != nil {
-		panic(err)
-	}
+	exitOnErr(err)
 	dump, _ := json.Marshal(clickSchema)
 	log.Printf("using click schema:\n%s", dump)
 }
-
-/*
-func insertMessages(ctx context.Context, ins *bigquery.Inserter, messages []*pubsub.Message) error {
-	clicks := make([]*bigquery.StructSaver, 0, len(messages))
-	errors := make(map[string]error)
-
-	// parse messages
-	for _, m := range messages {
-		var click Click
-		if err := json.Unmarshal(m.Data, &click); err != nil {
-			errors[m.ID] = fmt.Errorf("failed to unmarshal click data: %v", m.Data)
-			continue
-		}
-		clicks = append(clicks, &bigquery.StructSaver{
-			Schema: clickSchema, InsertID: m.ID, Struct: &click,
-		})
-	}
-
-	// insert messages and collect errors
-	err := ins.Put(ctx, clicks)
-	if mult, ok := err.(bigquery.PutMultiError); ok {
-		for _, rowErr := range mult {
-			errors[rowErr.InsertID] = &rowErr
-		}
-		err = nil
-	} else if err != nil {
-		return err
-	}
-
-	acked := 0
-	// ack inserted messages and let messages of failed inserts expire
-	for _, m := range messages {
-		if err := errors[m.ID]; err != nil {
-			log.Printf("insert failed, error: %s, ID: %s, Data: %v", err.Error(), m.ID, m.Data)
-			// Do not `Nack` the message, instead let it expire.
-			// This avoids the message being resent immediately.
-			continue
-		}
-		acked++
-		m.Ack()
-	}
-
-	log.Printf("acked and inserted messages %d/%d", acked, len(messages))
-	return nil
-}
-*/
 
 func exitOnErr(err error) {
 	if err != nil {
