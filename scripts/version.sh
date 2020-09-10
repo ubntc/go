@@ -25,7 +25,7 @@ touch_tag(){
     # This will trigger an update of the package files in pkg.go.dev and will also add the package
     # to the go.mod file, from which we can remove it using  `go mod tidy`
     echo "fetching $tag for package $pkg"
-    run go get -d github.com/ubntc/go/$pkg@$tag
+    run go get github.com/ubntc/go/$pkg@$tag
 }
 
 trap "run go mod tidy" EXIT              # ensure cleanup
