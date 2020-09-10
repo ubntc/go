@@ -9,4 +9,4 @@ This package implements batching of messages for the `bigquery.Inserter`.
 ```golang
 ```
 
-Also see the [PubSub to BigQuery](../_examples/pubsub-to-bq) example.
+Also see the [PubSub to BigQuery](_examples/pubsub-to-bq) example.
