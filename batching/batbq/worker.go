@@ -37,24 +37,25 @@ func Worker(ctx context.Context, ins *InsertBatcher, input <-chan Message, out P
 		}()
 	}
 
+	ticker := time.NewTicker(ins.flushInterval)
+	defer ticker.Stop()
+
 	flush := func() {
 		if len(batch) == 0 {
 			return
 		}
 		err := out.Put(ctx, toStructs(batch))
-		batchCopy := batch                       // create a copy for async (n)acking messages
-		batch = make([]Message, 0, ins.capacity) // clear the batch to allow refill
-		confirm(batchCopy, err)                  // ack/nack processed messages
+		confirm(batch, err)                      // use current slice to ack/nack processed messages
+		batch = make([]Message, 0, ins.capacity) // create a new slice to allow immediate refill
+		ticker.Reset(ins.flushInterval)          // reset the ticker to avoid too early flush
 	}
 	defer flush()
-
-	tick := time.Tick(ins.flushInterval)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-tick:
+		case <-ticker.C:
 			flush()
 		case msg, more := <-input:
 			if !more {

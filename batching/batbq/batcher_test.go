@@ -3,7 +3,6 @@ package batbq_test
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"testing"
 	"time"
@@ -50,7 +49,7 @@ func (rec *source) Chan() <-chan batbq.Message {
 			time.Sleep(rec.sendDelay)
 		}
 		close(ch)
-		log.Print("send chan closed")
+		// log.Print("send chan closed")
 	}()
 	return ch
 }
