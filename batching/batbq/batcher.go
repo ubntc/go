@@ -39,7 +39,7 @@ type InsertBatcher struct {
 // NewInsertBatcher returns an InsertBatcher.
 func NewInsertBatcher(cfg BatcherConfig) *InsertBatcher {
 	if cfg.FlushInterval <= 0 {
-		cfg.ScaleInterval = DefaultFlushInterval
+		cfg.FlushInterval = DefaultFlushInterval
 	}
 	if cfg.MinWorkers <= 0 {
 		cfg.MinWorkers = DefaultMinWorkers
