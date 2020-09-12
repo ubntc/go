@@ -37,7 +37,7 @@ func main() {
 	output := client.Dataset("tmp").Table("batbq").Inserter()
 
 	input := make(chan batbq.Message, capacity)
-	batcher := batbq.NewInsertBatcher(capacity, interval, workers)
+	batcher := batbq.NewInsertBatcher(batbq.BatcherConfig{capacity, interval, workers, 0})
 
 	go func() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })

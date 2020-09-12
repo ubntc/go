@@ -5,10 +5,20 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"cloud.google.com/go/bigquery"
 )
 
+func toStructs(messages []Message) []*bigquery.StructSaver {
+	res := make([]*bigquery.StructSaver, len(messages))
+	for i, m := range messages {
+		res[i] = m.Data()
+	}
+	return res
+}
+
 // Worker starts a new worker.
-func Worker(ctx context.Context, ins *InsertBatcher, input <-chan Message, out Putter) {
+func Worker(ctx context.Context, cfg BatcherConfig, metrics *metricsRecorder, input <-chan Message, out Putter) {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
@@ -34,10 +44,11 @@ func Worker(ctx context.Context, ins *InsertBatcher, input <-chan Message, out P
 			for _, m := range messages {
 				m.Ack()
 			}
+			metrics.SetMessages(len(messages), 1)
 		}()
 	}
 
-	ticker := time.NewTicker(ins.flushInterval)
+	ticker := time.NewTicker(cfg.FlushInterval)
 	defer ticker.Stop()
 
 	flush := func() {
@@ -46,8 +57,8 @@ func Worker(ctx context.Context, ins *InsertBatcher, input <-chan Message, out P
 		}
 		err := out.Put(ctx, toStructs(batch))
 		confirm(batch, err)                      // use current slice to ack/nack processed messages
-		batch = make([]Message, 0, ins.capacity) // create a new slice to allow immediate refill
-		ticker.Reset(ins.flushInterval)          // reset the ticker to avoid too early flush
+		batch = make([]Message, 0, cfg.Capacity) // create a new slice to allow immediate refill
+		ticker.Reset(cfg.FlushInterval)          // reset the ticker to avoid too early flush
 	}
 	defer flush()
 
@@ -62,7 +73,7 @@ func Worker(ctx context.Context, ins *InsertBatcher, input <-chan Message, out P
 				return
 			}
 			batch = append(batch, msg)
-			if len(batch) >= ins.capacity {
+			if len(batch) >= cfg.Capacity {
 				flush()
 			}
 		}
