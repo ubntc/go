@@ -107,11 +107,11 @@ func testRun(t *testing.T, spec TestSpec) *TestResults {
 	}
 	assert.Len(t, data, spec.len)
 
-	snd := &source{
+	src := &source{
 		messages:  data,
 		sendDelay: spec.timing.sendDelay,
 	}
-	input := snd.Chan()
+	input := src.Chan()
 	output := &putter{
 		writeDelay: spec.timing.writeDelay,
 	}

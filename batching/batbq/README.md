@@ -82,8 +82,9 @@ and in the `handler` you need to convert the `pubsub.Message` to a `batbq.Messag
 ## Worker Scaling
 
 Internally batbq uses one or more [workers](./worker.go) to process data from the `input` channel. If the `Putter` (e.g., a `bigquery.Inserter`) is stalled, the worker will block.
-The worker will also block if an inserted batch of messages is not yet confirmed on the sender side using, i.e., if the `Ack()` calls are blocking.
+The worker will also block if an inserted batch of messages is not yet confirmed on the sender side, i.e., if one of the batch's `Ack()` call is blocking.
 
 Currently, a pipeline with slow senders or receivers is automatically given more workers to increase the concurrency level. This results in more batches being collected
-and sent concurrently via `output.Put(ctx, batch)`. All workers share the same `input` channel.
+and sent concurrently via `output.Put(ctx, batch)`. However, all workers share the same `input <-chan batbq.Message` channel and the same `out Putter`. Both the data source
+and the output must support concurrent requests, i.e., `Ack()`, `Nack(error)`, and `Put(ctx, batch)` calls.
 
