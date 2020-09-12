@@ -10,9 +10,11 @@ import (
 // BatcherConfig defaults.
 const (
 	DefaultScaleInterval = time.Second // how often to trigger worker scaling
+	DefaultFlushInterval = time.Second // when to send partially filled batches
 	DefaultMinWorkers    = 1
-	MaxWorkerFactor      = 10 // factor multiplied to cfg.MinWorkers to determine the MaxWorkers
-	DrainedDivisor       = 10 // divisor applied to input channel length to check for drained channels
+
+	MaxWorkerFactor = 10 // factor multiplied to cfg.MinWorkers to determine the MaxWorkers
+	DrainedDivisor  = 10 // divisor applied to input channel length to check for drained channels
 )
 
 // Putter provides a `Put` func as used by the `bigquery.Inserter`.
@@ -36,10 +38,13 @@ type InsertBatcher struct {
 
 // NewInsertBatcher returns an InsertBatcher.
 func NewInsertBatcher(cfg BatcherConfig) *InsertBatcher {
+	if cfg.FlushInterval <= 0 {
+		cfg.ScaleInterval = DefaultFlushInterval
+	}
 	if cfg.MinWorkers <= 0 {
 		cfg.MinWorkers = DefaultMinWorkers
 	}
-	if cfg.ScaleInterval == 0 {
+	if cfg.ScaleInterval <= 0 {
 		cfg.ScaleInterval = DefaultScaleInterval
 	}
 	return &InsertBatcher{
@@ -58,35 +63,48 @@ func (ins *InsertBatcher) Process(ctx context.Context, input <-chan Message, out
 	var wg sync.WaitGroup
 
 	cfg := ins.cfg
+	hooks := make(map[context.Context]func())
+	mu := &sync.Mutex{}
 
-	var hooks []func()
 	addWorker := func() {
+		mu.Lock()
+		defer mu.Unlock()
+
+		if len(hooks) >= cfg.MinWorkers*MaxWorkerFactor {
+			return
+		}
 		log.Printf("adding worker #%d", len(hooks)+1)
-		wg.Add(1)
 		wctx, cancel := context.WithCancel(ctx)
-		hooks = append(hooks, cancel)
+		hooks[wctx] = cancel
+
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			Worker(wctx, cfg, ins.metrics, input, out)
+
+			mu.Lock()
+			delete(hooks, wctx)
+			ins.metrics.SetWorkers(len(hooks))
+			mu.Unlock()
 		}()
+
 		ins.metrics.SetWorkers(len(hooks))
 	}
 
 	rmWorker := func() {
+		mu.Lock()
+		defer mu.Unlock()
 		if len(hooks) <= cfg.MinWorkers {
 			return
 		}
-		if len(hooks) >= cfg.MinWorkers*MaxWorkerFactor {
-			return
+		log.Printf("removing one of %d workers", len(hooks))
+		for _, cancel := range hooks {
+			cancel()
+			break
 		}
-		log.Printf("removing first worker of %d workers", len(hooks))
-		cancel := hooks[0]
-		hooks = hooks[1:]
-		cancel()
-		ins.metrics.SetWorkers(len(hooks))
 	}
 
-	for len(hooks) < cfg.MinWorkers {
+	for i := 0; i < cfg.MinWorkers; i++ {
 		addWorker()
 	}
 
