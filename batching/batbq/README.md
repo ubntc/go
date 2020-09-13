@@ -47,7 +47,7 @@ func main() {
 	output := client.Dataset("tmp").Table("batbq").Inserter()
 
 	input := make(chan batbq.Message, capacity)
-	batcher := batbq.NewInsertBatcher(batbq.BatcherConfig{capacity, interval, workers, 0})
+	batcher := batbq.NewInsertBatcher(batbq.BatcherConfig{capacity, interval, workers, false, 0})
 
 	go func() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })
@@ -55,7 +55,6 @@ func main() {
 	}()
 	batcher.Process(ctx, input, output)
 }
-
 ```
 
 Also see the [PubSub to BigQuery](_examples/pubsub-to-bq/main.go) example.
