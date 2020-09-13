@@ -72,12 +72,12 @@ The `Put` method of a `bigquery.Inserter` will treat the given data as `bigquery
 compatible type. Therefore batbq calls `batbq.Message.Data()` on each passed `batbq.Message`, which
 must return a `*bigquery.StructSaver`.
 
-Setting up a batch pipeline therefore requires the following steps.
+Setting up a batch pipeline requires the following steps.
 
 1. Create a wrapping type that implements `batbq.Message` providing `Ack()`, `Nack(error)`,
    and `Data() *bigquery.StructSaver`.
-2. Create a `chan batbq.Message` channel to pass data to the `InsertBatcher`
-3. Fill this channel with messages by any means needed by the Go-API of the data source.
+2. Create a `chan batbq.Message` channel to pass data to the `InsertBatcher`.
+3. Consume messages from the  original data source and fill them into the channel.
 
 For instance, for PubSub you need to register a handler using `subscription.Receive(ctx, handler)`
 and in the `handler` you need to convert the `pubsub.Message` to a `batbq.Message` as shown in the
@@ -85,20 +85,19 @@ and in the `handler` you need to convert the `pubsub.Message` to a `batbq.Messag
 
 ## Worker Scaling
 
-Internally batbq uses one or more worker goroutines to process data from the `input` channel.
+Internally batbq uses one or more worker goroutines to process data from the input channel.
 If the `Putter` (e.g., a `bigquery.Inserter`) is stalled, the workers will block.
 The worker will also block if an inserted batch of messages is not yet confirmed on the sender side,
-i.e., if one of the batch's `Ack()` or `Nack(error)` calls is blocking.
+i.e., if one or more `Ack()` or `Nack(error)` calls are blocking.
 
 If `BatcherConfig.AutoScale` is `true` a pipeline with slow senders or receivers is automatically
 given more workers to increase the concurrency level. This results in more batches being collected
 and sent concurrently via `output.Put(ctx, batch)`. However, all workers share the same
-`input <-chan batbq.Message` channel and the same `out Putter`. Both the data source
-and the output must support concurrent requests, i.e., `Ack()`, `Nack(error)`, and
-`Put(ctx, batch)` calls.
+`input <-chan batbq.Message` and the same `output Putter`. Both the data source and the output must
+be concurrency-safe and allow for concurrent calls of `Ack()`, `Nack(error)`, and `Put(ctx, batch)`.
 
 ## Multi Batching
 
-The package provides a `MultiInsertBatcher` that can be set up to batch data from multiple inputs
-to multiple outputs in parallel. Please consult the corresponding [test](multibatcher_test.go) on
-how to set it up.
+The package also provides a `MultiBatcher` that can be set up to batch data from multiple inputs
+and outputs in parallel. Please consult the corresponding [test case](multibatcher_test.go) on how
+to set it up.
