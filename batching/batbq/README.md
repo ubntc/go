@@ -2,6 +2,9 @@
 [![cover-badge](https://img.shields.io/badge/coverage-93%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
 
 # Batched BigQuery Inserter
+
+[![Go-batching Logo](resources/go-batching-logo.svg)](https://github.com/ubntc/go/blob/master/batching/batbq)
+
 This package implements batching of messages for the `bigquery.Inserter`.
 
 ## Usage
