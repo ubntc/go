@@ -39,7 +39,7 @@ func (src *Source) Receive(ctx context.Context, f func(m *Message)) {
 			f(&Message{id, val})
 			i++
 		}
-		if i > 200 {
+		if i >= 200 {
 			log.Print("dummy source stopped")
 			return
 		}

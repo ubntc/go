@@ -90,7 +90,7 @@ func main() {
 	workers := 1
 
 	input := make(chan batbq.Message, capacity)
-	batcher := batbq.NewInsertBatcher(batbq.BatcherConfig{capacity, interval, workers, 0})
+	batcher := batbq.NewInsertBatcher(batbq.BatcherConfig{capacity, interval, workers, true, 0})
 
 	go subscription.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
 		msg, err := NewClickMessage(m)

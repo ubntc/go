@@ -22,6 +22,7 @@ func (m *row) Save() (row map[string]bigquery.Value, insertID string, err error)
 }
 
 type putter struct {
+	name string
 	sync.Mutex
 	table      []map[string]bigquery.Value
 	writeDelay time.Duration
@@ -73,9 +74,11 @@ func (rec *source) Chan() <-chan batbq.Message {
 }
 
 type Timing struct {
-	dur           time.Duration // batch interval
-	sendDelay     time.Duration // delay between test messages
-	writeDelay    time.Duration // delay of the batch receiver
+	dur        time.Duration // batch interval
+	sendDelay  time.Duration // delay between test messages
+	writeDelay time.Duration // delay of the batch receiver
+
+	autoScale     bool
 	scaleInterval time.Duration // how often to trigger worker scaling
 }
 
@@ -97,7 +100,7 @@ func testRun(t *testing.T, spec TestSpec) *TestResults {
 	defer cancel()
 
 	if spec.timing == nil {
-		spec.timing = &Timing{time.Second, 0, 0, 0}
+		spec.timing = &Timing{time.Second, 0, 0, false, 0}
 	}
 
 	data := make([]*batbq.LogMessage, 0, spec.len)
@@ -113,6 +116,7 @@ func testRun(t *testing.T, spec TestSpec) *TestResults {
 	}
 	input := src.Chan()
 	output := &putter{
+		name:       t.Name(),
 		writeDelay: spec.timing.writeDelay,
 	}
 
@@ -120,6 +124,7 @@ func testRun(t *testing.T, spec TestSpec) *TestResults {
 		Capacity:      spec.cap,
 		FlushInterval: spec.timing.dur,
 		ScaleInterval: spec.timing.scaleInterval,
+		AutoScale:     spec.timing.autoScale,
 	})
 	batcher.Process(ctx, input, output)
 
@@ -137,7 +142,7 @@ func TestInsertBatcher(t *testing.T) {
 		"small cap": {100, 1, 100, nil, nil},
 		"big cap":   {100, 1000, 1, nil, nil},
 		// special cases
-		"timeout":  {2, 10, 2, nil, &Timing{time.Microsecond, time.Millisecond, 0, 0}},
+		"timeout":  {2, 10, 2, nil, &Timing{time.Microsecond, time.Millisecond, 0, false, 0}},
 		"zero len": {0, 10, 0, nil, nil},
 		"zero cap": {10, 0, 10, nil, nil},
 		// NOTE: A zero capacity case is valid since Go's `append` will add missing slice capacity
@@ -157,7 +162,7 @@ func TestInsertBatcher(t *testing.T) {
 
 func TestWorkerScaling(t *testing.T) {
 	// TODO: add batchDelay to simulate stalled writes
-	spec := TestSpec{100, 10, 10, nil, &Timing{100 * time.Millisecond, 0, 10 * time.Millisecond, time.Millisecond}}
+	spec := TestSpec{100, 10, 10, nil, &Timing{100 * time.Millisecond, 0, 10 * time.Millisecond, true, time.Millisecond}}
 	res := testRun(t, spec)
 	assert.Equal(t, spec.expBatches, int(res.NumBatches))
 	assert.GreaterOrEqual(t, res.MaxWorkers, 2, "at least one extra worker must have started")

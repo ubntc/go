@@ -34,7 +34,7 @@ func (rec *metricsRecorder) SetWorkers(numWorkers int) {
 }
 
 // SetMessages updates the metrics.
-func (rec *metricsRecorder) SetMessages(addedMessages, addedBatches int) {
+func (rec *metricsRecorder) IncMessages(addedMessages, addedBatches int) {
 	rec.Lock()
 	defer rec.Unlock()
 	rec.m.NumBatches += int64(addedBatches)
