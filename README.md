@@ -6,10 +6,10 @@ This repository hosts the following projects.
 Basic CLI-enhancements for your Go-services, incl. input commands, human-friendly logging, and
 OS-signal handling.
 
-## [BatSub: ubntc/go/batsub](/batbq)
+## [BatSub: ubntc/go/batchers/batbq](/batchers/batbq)
 Capacity and interval-based batch writing of rows to BigQuery.
 
-## [BatSub: ubntc/go/batsub](/batsub)
+## [BatSub: ubntc/go/batchers/batsub](/batchers/batsub)
 Capacity and interval-based batch reading of PubSub messages.
 
 ## [Go-scripts: ubntc/go/scripts](/scripts)
@@ -22,12 +22,11 @@ Gophers art and vector graphics.
 Experiments and code for learning and understanding the pitfalls of Go, esp. regarding concurrency.
 
 ## Monorepo approach
-The Go code in this monorepo is managed in subpackages, such as [ubntc/cli](cli).
-These subpackages have their own `go.mod` file, which makes `go mod` exclude their dependencies
-from the root [go.mod]().
+The Go code in this monorepo is managed in subpackages, such as [ubntc/cli](cli). These subpackages
+have their own `go.mod` file, which makes `go mod` exclude their dependencies from the root [go.mod]().
 
 Maturing packages are given their own `go.mod`, `README.md`, and a copy of the `LICENSE` as soon as
 they are tested thoroughly and fulfill a specific purpose on their own.
 
-All other Go code is to be considered highly experimental and is owned by the root project from
+All other Go code is to be considered highly experimental and is owned by the root project, from
 where it could be vendored for testing purposes only.
