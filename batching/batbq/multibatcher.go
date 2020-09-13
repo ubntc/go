@@ -2,6 +2,7 @@ package batbq
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 )
@@ -33,10 +34,11 @@ type InputGetter func(id PipelineID) <-chan Message
 type OutputGetter func(id PipelineID) Putter
 
 // Process starts the batchers.
-func (mb *MultiBatcher) Process(ctx context.Context, input InputGetter, output OutputGetter) {
-	var wg sync.WaitGroup
-	defer wg.Wait()
+func (mb *MultiBatcher) Process(ctx context.Context, input InputGetter, output OutputGetter) <-chan error {
 	batchers := make(map[PipelineID]*InsertBatcher)
+
+	errchan := make(chan error, len(mb.ids))
+	var wg sync.WaitGroup
 	for _, id := range mb.ids {
 		ins := NewInsertBatcher(mb.cfg)
 		batchers[id] = ins
@@ -44,17 +46,32 @@ func (mb *MultiBatcher) Process(ctx context.Context, input InputGetter, output O
 		go func(id PipelineID) {
 			defer wg.Done()
 			in := input(id)
-			if in == nil {
-				log.Println("failed to create input channel for PipelineID:", id)
-				return
-			}
 			out := output(id)
-			if out == nil {
-				log.Println("failed to create output for PipelineID:", id)
-				return
+			if err := ins.Process(ctx, in, out); err != nil {
+				log.Print(err)
+				errchan <- fmt.Errorf("failed to process pipeline: %s", id)
 			}
-			ins.Process(ctx, in, out)
 		}(id)
 	}
-	// TODO: go func() { collects joint metrics }
+
+	go func() {
+		wg.Wait()
+		close(errchan)
+	}()
+
+	// TODO: go func() { collects joint metrics from `batchers` by `id` }
+
+	return errchan
+}
+
+// MustProcess starts the batcher and stops if any of the pipelines fails.
+func (mb *MultiBatcher) MustProcess(ctx context.Context, input InputGetter, output OutputGetter) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	for err := range mb.Process(ctx, input, output) {
+		return err
+	}
+
+	return nil
 }

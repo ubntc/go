@@ -14,9 +14,7 @@ import (
 func TestMultiBatcher(t *testing.T) {
 	mb := batbq.NewMultiBatcher(
 		[]string{"p1", "p2"},
-		batbq.BatcherConfig{
-			AutoScale: false,
-		},
+		batbq.BatcherConfig{},
 	)
 
 	input := func(id batbq.PipelineID) <-chan batbq.Message {
@@ -45,7 +43,9 @@ func TestMultiBatcher(t *testing.T) {
 		return p
 	}
 
-	mb.Process(context.Background(), input, output)
+	for err := range mb.Process(context.Background(), input, output) {
+		assert.NoError(t, err)
+	}
 	close(putters)
 
 	for p := range putters {

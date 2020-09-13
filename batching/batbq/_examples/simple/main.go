@@ -28,16 +28,19 @@ func (msg *Msg) Data() *bigquery.StructSaver {
 }
 
 func main() {
-	capacity, interval, workers := 100, time.Second, 1
-
 	source := custom.NewSource("src_name") // custom data source
 
 	ctx := context.Background()
 	client, _ := bigquery.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
 	output := client.Dataset("tmp").Table("batbq").Inserter()
 
-	input := make(chan batbq.Message, capacity)
-	batcher := batbq.NewInsertBatcher(batbq.BatcherConfig{capacity, interval, workers, false, 0})
+	cfg := batbq.BatcherConfig{
+		Capacity:      100,
+		FlushInterval: time.Second,
+	}
+
+	input := make(chan batbq.Message, cfg.Capacity)
+	batcher := batbq.NewInsertBatcher(cfg)
 
 	go func() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })

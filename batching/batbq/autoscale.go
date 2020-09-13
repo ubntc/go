@@ -21,7 +21,7 @@ func autoscale(ctx context.Context, ins *InsertBatcher) {
 		mu.Lock()
 		defer mu.Unlock()
 
-		if len(hooks) >= cfg.MinWorkers*MaxWorkerFactor {
+		if len(hooks) >= cfg.MaxWorkers {
 			return
 		}
 		log.Printf("adding worker #%d", len(hooks)+1)

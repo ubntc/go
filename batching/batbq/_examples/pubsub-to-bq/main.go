@@ -85,12 +85,16 @@ func main() {
 	defer bqClient.Close()
 	output := bqClient.Dataset(*ds).Table(*table).Inserter()
 
-	capacity := 10
-	interval := time.Second
-	workers := 1
+	cfg := batbq.BatcherConfig{
+		Capacity:      10,
+		FlushInterval: time.Second,
+		WorkerConfig: batbq.WorkerConfig{
+			AutoScale: true,
+		},
+	}
 
-	input := make(chan batbq.Message, capacity)
-	batcher := batbq.NewInsertBatcher(batbq.BatcherConfig{capacity, interval, workers, true, 0})
+	input := make(chan batbq.Message, cfg.Capacity)
+	batcher := batbq.NewInsertBatcher(cfg)
 
 	go subscription.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
 		msg, err := NewClickMessage(m)
@@ -99,5 +103,7 @@ func main() {
 		}
 		input <- msg
 	})
-	batcher.Process(ctx, input, output)
+	if err := batcher.Process(ctx, input, output); err != nil {
+		log.Fatal(err)
+	}
 }

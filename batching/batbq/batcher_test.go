@@ -123,8 +123,10 @@ func testRun(t *testing.T, spec TestSpec) *TestResults {
 	batcher := batbq.NewInsertBatcher(batbq.BatcherConfig{
 		Capacity:      spec.cap,
 		FlushInterval: spec.timing.dur,
-		ScaleInterval: spec.timing.scaleInterval,
-		AutoScale:     spec.timing.autoScale,
+		WorkerConfig: batbq.WorkerConfig{
+			ScaleInterval: spec.timing.scaleInterval,
+			AutoScale:     spec.timing.autoScale,
+		},
 	})
 	batcher.Process(ctx, input, output)
 
