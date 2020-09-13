@@ -31,3 +31,11 @@ func (m *LogMessage) Nack(err error) {
 func (m *LogMessage) Data() *bigquery.StructSaver {
 	return m.StructSaver
 }
+
+func toStructs(messages []Message) []*bigquery.StructSaver {
+	res := make([]*bigquery.StructSaver, len(messages))
+	for i, m := range messages {
+		res[i] = m.Data()
+	}
+	return res
+}

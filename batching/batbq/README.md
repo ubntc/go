@@ -1,5 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/ubntc/go/batcher/batbq)](https://goreportcard.com/report/github.com/ubntc/go/batcher/batbq)
-[![cover-badge](https://img.shields.io/badge/coverage-96%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
+[![cover-badge](https://img.shields.io/badge/coverage-93%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
 
 # Batched BigQuery Inserter
 This package implements batching of messages for the `bigquery.Inserter`.
@@ -60,8 +60,8 @@ Also see the [PubSub to BigQuery](_examples/pubsub-to-bq/main.go) example.
 
 ## Batcher Design
 
-The package provides an `InsertBatcher` that requires an `input <-chan batbq.Message` channel to collect
-individual messages from a streaming data source as shown in the [examples](./_examples).
+The package provides an `InsertBatcher` that requires an `input <-chan batbq.Message` channel to
+collect individual messages from a streaming data source as shown in the [examples](./_examples).
 The `InsertBatcher` also requires a `Putter` that implements `Put(context.Context, interface{})`
 as provided the regular `bigquery.Inserter`.
 
@@ -71,7 +71,8 @@ must return a `*bigquery.StructSaver`.
 
 Setting up a batch pipeline therefore requires the following steps.
 
-1. Create a wrapping type that implements `batbq.Message` providing `Ack()`, `Nack(error)`, and `Data() *bigquery.StructSaver`.
+1. Create a wrapping type that implements `batbq.Message` providing `Ack()`, `Nack(error)`,
+   and `Data() *bigquery.StructSaver`.
 2. Create a `chan batbq.Message` channel to pass data to the `InsertBatcher`
 3. Fill this channel with messages by any means needed by the Go-API of the data source.
 
@@ -81,10 +82,20 @@ and in the `handler` you need to convert the `pubsub.Message` to a `batbq.Messag
 
 ## Worker Scaling
 
-Internally batbq uses one or more [workers](./worker.go) to process data from the `input` channel. If the `Putter` (e.g., a `bigquery.Inserter`) is stalled, the worker will block.
-The worker will also block if an inserted batch of messages is not yet confirmed on the sender side, i.e., if one of the batch's `Ack()` call is blocking.
+Internally batbq uses one or more worker goroutines to process data from the `input` channel.
+If the `Putter` (e.g., a `bigquery.Inserter`) is stalled, the workers will block.
+The worker will also block if an inserted batch of messages is not yet confirmed on the sender side,
+i.e., if one of the batch's `Ack()` or `Nack(error)` calls is blocking.
 
-Currently, a pipeline with slow senders or receivers is automatically given more workers to increase the concurrency level. This results in more batches being collected
-and sent concurrently via `output.Put(ctx, batch)`. However, all workers share the same `input <-chan batbq.Message` channel and the same `out Putter`. Both the data source
-and the output must support concurrent requests, i.e., `Ack()`, `Nack(error)`, and `Put(ctx, batch)` calls.
+If `BatcherConfig.AutoScale` is `true` a pipeline with slow senders or receivers is automatically
+given more workers to increase the concurrency level. This results in more batches being collected
+and sent concurrently via `output.Put(ctx, batch)`. However, all workers share the same
+`input <-chan batbq.Message` channel and the same `out Putter`. Both the data source
+and the output must support concurrent requests, i.e., `Ack()`, `Nack(error)`, and
+`Put(ctx, batch)` calls.
 
+## Multi Batching
+
+The package provides a `MultiInsertBatcher` that can be set up to batch data from multiple inputs
+to multiple outputs in parallel. Please consult the corresponding [test](multibatcher_test.go) on
+how to set it up.
