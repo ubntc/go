@@ -2,6 +2,7 @@ package batbq
 
 import (
 	"context"
+	"errors"
 	"log"
 	"sync"
 	"time"
@@ -16,11 +17,18 @@ type Putter interface {
 type InsertBatcher struct {
 	cfg     BatcherConfig
 	metrics *metricsRecorder
+	input   <-chan Message
+	output  Putter
+	mu      *sync.Mutex
 }
 
 // NewInsertBatcher returns an InsertBatcher.
 func NewInsertBatcher(cfg BatcherConfig) *InsertBatcher {
-	return &InsertBatcher{cfg.WithDefaults(), newMetricsRecorder()}
+	return &InsertBatcher{
+		cfg:     cfg.WithDefaults(),
+		metrics: newMetricsRecorder(),
+		mu:      &sync.Mutex{},
+	}
 }
 
 // Metrics returns a copy of the metrics.
@@ -29,23 +37,37 @@ func (ins *InsertBatcher) Metrics() *Metrics {
 }
 
 // Process starts the batcher.
-func (ins *InsertBatcher) Process(ctx context.Context, input <-chan Message, out Putter) {
+func (ins *InsertBatcher) Process(ctx context.Context, input <-chan Message, output Putter) error {
+	if input == nil {
+		return errors.New("input channel must not be nil")
+	}
+	if output == nil {
+		return errors.New("output Putter must not be nil")
+	}
+	// ensure ins.Process is not called concurrently
+	ins.mu.Lock()
+	defer ins.mu.Unlock()
+	ins.input = input
+	ins.output = output
 	if ins.cfg.AutoScale {
-		ins.autoProcess(ctx, input, out)
-		return
+		autoscale(ctx, ins)
+		return nil
 	}
 	ins.metrics.SetWorkers(1)
-	ins.process(ctx, input, out)
+	ins.worker(ctx)
 	ins.metrics.SetWorkers(0)
+	return nil
 }
 
-func (ins *InsertBatcher) process(ctx context.Context, input <-chan Message, out Putter) {
+func (ins *InsertBatcher) worker(ctx context.Context) {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
 	// batch of messages to be filled from the input channel
 	var batch []Message
 	cfg := ins.cfg
+	input := ins.input
+	output := ins.output
 
 	var ackLock sync.Mutex
 	confirm := func(messages []Message, err error) {
@@ -77,7 +99,7 @@ func (ins *InsertBatcher) process(ctx context.Context, input <-chan Message, out
 		if len(batch) == 0 {
 			return
 		}
-		err := out.Put(ctx, toStructs(batch))
+		err := output.Put(ctx, toStructs(batch))
 		confirm(batch, err)                      // use current slice to ack/nack processed messages
 		batch = make([]Message, 0, cfg.Capacity) // create a new slice to allow immediate refill
 		ticker.Reset(cfg.FlushInterval)          // reset the ticker to avoid too early flush
@@ -100,78 +122,4 @@ func (ins *InsertBatcher) process(ctx context.Context, input <-chan Message, out
 			}
 		}
 	}
-}
-
-// autoProcess start and stops `process` multiple times according to number of `ins.cfg.MinWorkers`,
-// `ins.cfg.MaxWorkerFactor`, and the number of queued messages on the `input` channel.
-func (ins *InsertBatcher) autoProcess(ctx context.Context, input <-chan Message, out Putter) {
-	var wg sync.WaitGroup
-
-	cfg := ins.cfg
-	hooks := make(map[context.Context]func())
-	mu := &sync.Mutex{}
-
-	addWorker := func() {
-		mu.Lock()
-		defer mu.Unlock()
-
-		if len(hooks) >= cfg.MinWorkers*MaxWorkerFactor {
-			return
-		}
-		log.Printf("adding worker #%d", len(hooks)+1)
-		wctx, cancel := context.WithCancel(ctx)
-		hooks[wctx] = cancel
-		ins.metrics.SetWorkers(len(hooks))
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			ins.process(wctx, input, out)
-
-			mu.Lock()
-			delete(hooks, wctx)
-			ins.metrics.SetWorkers(len(hooks))
-			mu.Unlock()
-		}()
-	}
-
-	rmWorker := func() {
-		mu.Lock()
-		defer mu.Unlock()
-		if len(hooks) <= cfg.MinWorkers {
-			return
-		}
-		log.Printf("removing one of %d workers", len(hooks))
-		for _, cancel := range hooks {
-			cancel()
-			break
-		}
-	}
-
-	for i := 0; i < cfg.MinWorkers; i++ {
-		addWorker()
-	}
-
-	// start worker scaling
-	tick := time.NewTicker(cfg.ScaleInterval)
-
-	go func() {
-		if cfg.Capacity <= 1 {
-			// cannot do capacity-based scaling for small capacities
-			return
-		}
-		for {
-			<-tick.C
-			switch {
-			case len(input) >= cfg.Capacity:
-				addWorker()
-			case len(input) < cfg.Capacity/DrainedDivisor:
-				rmWorker()
-			}
-		}
-	}()
-
-	wg.Wait()   // wait for all workers to finish
-	tick.Stop() // stop worker scaling
 }
