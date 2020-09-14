@@ -68,7 +68,7 @@ Also see the [PubSub to BigQuery](_examples/pubsub-to-bq/main.go) example.
 The package provides an `InsertBatcher` that requires an `input <-chan batbq.Message` channel to
 collect individual messages from a streaming data source as shown in the [examples](./_examples).
 The `InsertBatcher` also requires a `Putter` that implements `Put(context.Context, interface{})`
-as provided the regular `bigquery.Inserter`.
+as provided by the regular `bigquery.Inserter`.
 
 The `Put` method of a `bigquery.Inserter` will treat the given data as `bigquery.ValueSaver` or a
 compatible type. Therefore batbq calls `batbq.Message.Data()` on each passed `batbq.Message`, which
@@ -78,25 +78,31 @@ Setting up a batch pipeline requires the following steps.
 
 1. Create a wrapping type that implements `batbq.Message` providing `Ack()`, `Nack(error)`,
    and `Data() *bigquery.StructSaver`.
-2. Create a `chan batbq.Message` channel to pass data to the `InsertBatcher`.
-3. Consume messages from the  original data source and fill them into the channel.
+2. Create a `Putter` to receive the batches from the `InsertBatcher`.
+3. Create a `chan batbq.Message` channel to pass data to the `InsertBatcher`.
+4. In a goroutine, receive and wrap messages from a data source and send them to the channel.
+5. Start the batcher with it's `Process(context.Context, <-chan batbq.Message, Putter)` method.
 
-For instance, for PubSub you need to register a handler using `subscription.Receive(ctx, handler)`
-and in the `handler` you need to convert the `pubsub.Message` to a `batbq.Message` as shown in the
-[PubSub to BigQuery](_examples/pubsub-to-bq/main.go) example.
+For instance, if your data source is PubSub, first register a message handler using
+`subscription.Receive(ctx, handler)` in a goroutine, with the `handler` wrapping the
+`pubsub.Message` in a `batbq.Message` and sending it to the input channel.
+Then start the batcher to receive and batch these messages. The batcher will stop if the context
+is canceled or the input channel is closed; there is no "stop" method.
+See the full [PubSub to BigQuery](_examples/pubsub-to-bq/main.go) example for more details and
+options.
 
 ## Worker Scaling
 
 Internally batbq uses one or more worker goroutines to process data from the input channel.
-If the `Putter` (e.g., a `bigquery.Inserter`) is stalled, the workers will block.
-The worker will also block if an inserted batch of messages is not yet confirmed on the sender side,
-i.e., if one or more `Ack()` or `Nack(error)` calls are blocking.
+If the `Putter` (usually a `bigquery.Inserter`) is stalled, the workers will block.
+The worker will also block if the message confirmation is stalled by unanswered calls to `Ack()`
+or `Nack(error)` for the currently processed batch.
 
 If `BatcherConfig.AutoScale` is `true` a pipeline with slow senders or receivers is automatically
 given more workers to increase the concurrency level. This results in more batches being collected
 and sent concurrently via `output.Put(ctx, batch)`. However, all workers share the same
-`input <-chan batbq.Message` and the same `output Putter`. Both the data source and the output must
-be concurrency-safe and allow for concurrent calls of `Ack()`, `Nack(error)`, and `Put(ctx, batch)`.
+`input <-chan batbq.Message` and the same `output Putter`. Both, data source and output, must be
+concurrency-safe by supporting concurrent calls of `Ack()`, `Nack(error)`, and `Put(ctx, batch)`.
 
 ## Multi Batching
 
