@@ -69,6 +69,7 @@ func main() {
 		sub     = flag.String("sub", "clicks", "Subscription Name")
 		ds      = flag.String("ds", "tmp", "Dataset Name")
 		table   = flag.String("table", "clicks", "Table Name")
+		dry     = flag.Bool("dry", false, "setup pipeline but do not run the batcher")
 	)
 	flag.Parse()
 
@@ -94,7 +95,7 @@ func main() {
 	}
 
 	input := make(chan batbq.Message, cfg.Capacity)
-	batcher := batbq.NewInsertBatcher(cfg)
+	batcher := batbq.NewInsertBatcher("clicks", cfg)
 
 	go subscription.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
 		msg, err := NewClickMessage(m)
@@ -103,6 +104,9 @@ func main() {
 		}
 		input <- msg
 	})
+	if *dry {
+		return
+	}
 	if err := batcher.Process(ctx, input, output); err != nil {
 		log.Fatal(err)
 	}

@@ -1,11 +1,19 @@
+[![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4)](https://pkg.go.dev/mod/github.com/ubntc/go/batching/batbq)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ubntc/go/batcher/batbq)](https://goreportcard.com/report/github.com/ubntc/go/batcher/batbq)
-[![cover-badge](https://img.shields.io/badge/coverage-91%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
+[![cover-badge](https://img.shields.io/badge/coverage-93%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
 
 # Batched BigQuery Inserter
 
 [![Go-batching Logo](resources/go-batching-logo.svg)](https://github.com/ubntc/go/blob/master/batching/batbq)
 
-This package implements batching of messages for the `bigquery.Inserter`.
+Batbq package implements batching of messages for the `bigquery.Inserter` and provides the following features:
+
+1. batching of messages from a channel into a slice to sent to BigQuery,
+2. time-based flushing of partially filled batches,
+3. row-wise handling of insert errors,
+4. confirmation of messages at the sender (Ack/Nack),
+5. pipeline metrics for one or more batchers,
+6. basic autoscaling to create batches in parallel from an input channel.
 
 ## Usage
 
@@ -14,6 +22,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 	"time"
 
@@ -31,8 +40,13 @@ type Msg struct {
 	m *custom.Message // custom type providing data values and confirmation handlers
 }
 
-func (msg *Msg) Ack()           { msg.m.ConfirmMessage() }
-func (msg *Msg) Nack(err error) {}
+// Ack acknowledges the original message.
+func (msg *Msg) Ack() { msg.m.ConfirmMessage() }
+
+// Nack handles insert errors.
+func (msg *Msg) Nack(err error) { log.Print(err) }
+
+// Data returns the message as bigquery.StructSaver.
 func (msg *Msg) Data() *bigquery.StructSaver {
 	return &bigquery.StructSaver{InsertID: msg.m.ID, Struct: msg.m, Schema: schema}
 }
@@ -50,12 +64,13 @@ func main() {
 	}
 
 	input := make(chan batbq.Message, cfg.Capacity)
-	batcher := batbq.NewInsertBatcher(cfg)
+	batcher := batbq.NewInsertBatcher("custom_message", cfg)
 
 	go func() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })
 		close(input)
 	}()
+
 	batcher.Process(ctx, input, output)
 }
 ```
@@ -81,7 +96,7 @@ Setting up a batch pipeline requires the following steps.
 2. Create a `Putter` to receive the batches from the `InsertBatcher`.
 3. Create a `chan batbq.Message` channel to pass data to the `InsertBatcher`.
 4. In a goroutine, receive and wrap messages from a data source and send them to the channel.
-5. Start the batcher with it's `Process(context.Context, <-chan batbq.Message, Putter)` method.
+5. Start the batcher using its `Process(context.Context, <-chan batbq.Message, Putter)` method.
 
 For instance, if your data source is PubSub, first register a message handler using
 `subscription.Receive(ctx, handler)` in a goroutine, with the `handler` wrapping the
@@ -93,16 +108,23 @@ options.
 
 ## Worker Scaling
 
-Internally batbq uses one or more worker goroutines to process data from the input channel.
-If the `Putter` (usually a `bigquery.Inserter`) is stalled, the workers will block.
-The worker will also block if the message confirmation is stalled by unanswered calls to `Ack()`
-or `Nack(error)` for the currently processed batch.
+Internally batbq uses a blocking `worker(context.Context)` function to process data from the input
+channel forever. If the `Putter` (usually a `bigquery.Inserter`) is stalled, the worker will also
+stop reading data.
 
-If `BatcherConfig.AutoScale` is `true` a pipeline with slow senders or receivers is automatically
-given more workers to increase the concurrency level. This results in more batches being collected
-and sent concurrently via `output.Put(ctx, batch)`. However, all workers share the same
-`input <-chan batbq.Message` and the same `output Putter`. Both, data source and output, must be
-concurrency-safe by supporting concurrent calls of `Ack()`, `Nack(error)`, and `Put(ctx, batch)`.
+Note that the worker will NOT automatically stop reading data if the message confirmation is stalled
+through unanswered calls to `Ack()` or `Nack(error)`. Message confirmation is fully asynchronous and
+the sender must handle when to stop sending data (based on the number of unconfirmed messages).
+
+If `BatcherConfig.AutoScale` is `true` the batcher will concurrently run one or workers based on the
+size of the input channel and the [configured](config.go) `MinWorkers` and `MaxWorkers`. For this to
+work correctly, the input channel capacity must be equal to the [configured](config.go) batching
+`Capacity`.
+
+Using multiple workers, results in more batches being collected and sent concurrently via
+`output.Put(ctx, batch)`. However, all workers share the same `input <-chan batbq.Message` and the
+same `output Putter`. Both, data source and output, must be concurrency-safe by supporting
+concurrent calls of `Ack()`, `Nack(error)`, and `Put(ctx, batch)`.
 
 ## Multi Batching
 

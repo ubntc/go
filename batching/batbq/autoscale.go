@@ -3,13 +3,14 @@ package batbq
 import (
 	"context"
 	"log"
+	"math"
 	"sync"
 	"time"
 )
 
 // autoscale start and stops workers according to number of `ins.cfg.MinWorkers`,
 // `ins.cfg.MaxWorkerFactor`, and the number of queued messages on the `input` channel.
-func autoscale(ctx context.Context, ins *InsertBatcher) {
+func (ins *InsertBatcher) autoscale(ctx context.Context) {
 	var wg sync.WaitGroup
 
 	cfg := ins.cfg
@@ -27,7 +28,6 @@ func autoscale(ctx context.Context, ins *InsertBatcher) {
 		log.Printf("adding worker #%d", len(hooks)+1)
 		wctx, cancel := context.WithCancel(ctx)
 		hooks[wctx] = cancel
-		ins.metrics.SetWorkers(len(hooks))
 
 		wg.Add(1)
 		go func() {
@@ -37,7 +37,6 @@ func autoscale(ctx context.Context, ins *InsertBatcher) {
 
 			mu.Lock()
 			delete(hooks, wctx)
-			ins.metrics.SetWorkers(len(hooks))
 			mu.Unlock()
 		}()
 	}
@@ -70,9 +69,9 @@ func autoscale(ctx context.Context, ins *InsertBatcher) {
 		for {
 			<-tick.C
 			switch {
-			case len(input) >= cfg.Capacity:
+			case len(input) >= StalledCapacity(cfg.Capacity):
 				addWorker()
-			case len(input) < cfg.Capacity/DrainedDivisor:
+			case len(input) < DrainedCapacity(cfg.Capacity):
 				rmWorker()
 			}
 		}
@@ -80,4 +79,22 @@ func autoscale(ctx context.Context, ins *InsertBatcher) {
 
 	wg.Wait()   // wait for all workers to finish
 	tick.Stop() // stop worker scaling
+}
+
+// StalledCapacity computes the absolute stalled capacity from the global StalledRatio.
+func StalledCapacity(capacity int) int {
+	if capacity <= 0 {
+		return 0
+	}
+	stalled := int(math.Ceil(float64(capacity) * StalledRatio))
+	return stalled
+}
+
+// DrainedCapacity computes the absolute drained capacity from the global DrainedRatio.
+func DrainedCapacity(capacity int) int {
+	if capacity == 0 {
+		return 0
+	}
+	drained := int(math.Floor(float64(capacity) * DrainedRatio))
+	return drained
 }

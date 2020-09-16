@@ -8,8 +8,12 @@ const (
 	DefaultFlushInterval = time.Second // when to send partially filled batches
 	DefaultMinWorkers    = 1
 	DefaultMaxWorkers    = 10
+)
 
-	DrainedDivisor = 10 // divisor applied to input channel length to check for drained channels
+// Settings for worker scaling.
+var (
+	DrainedRatio = 0.2 // channel size relative to the batcher capacity at which the batcher is drained
+	StalledRatio = 0.8 // channel size relative to the batcher capacity at which the batcher is stalled
 )
 
 // WorkerConfig defines how many workers to use.
@@ -27,6 +31,11 @@ type BatcherConfig struct {
 	WorkerConfig
 }
 
+// Apply sets the batchers config.
+func (cfg BatcherConfig) Apply(ins *InsertBatcher) {
+	ins.cfg = cfg.WithDefaults()
+}
+
 // WithDefaults loads defaults values for unset values and returns the merged config.
 func (cfg BatcherConfig) WithDefaults() BatcherConfig {
 	if cfg.FlushInterval <= 0 {
@@ -42,4 +51,14 @@ func (cfg BatcherConfig) WithDefaults() BatcherConfig {
 		cfg.ScaleInterval = DefaultScaleInterval
 	}
 	return cfg
+}
+
+// WithMetrics sets the batchers metrics.
+type WithMetrics struct {
+	*Metrics
+}
+
+// Apply applies the option.
+func (m *WithMetrics) Apply(ins *InsertBatcher) {
+	ins.metrics = m.Metrics
 }

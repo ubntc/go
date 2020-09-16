@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/ubntc/go/batching/batbq"
 	custom "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
+	dummy "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
 )
 
 func TestMultiBatcher(t *testing.T) {
@@ -17,13 +18,13 @@ func TestMultiBatcher(t *testing.T) {
 		batbq.BatcherConfig{},
 	)
 
-	input := func(id batbq.PipelineID) <-chan batbq.Message {
+	input := func(id batbq.ID) <-chan batbq.Message {
 		src := custom.NewSource(string(id))
 		in := make(chan batbq.Message, 10)
 		go func() {
 			defer close(in)
 			src.Receive(context.Background(), func(m *custom.Message) {
-				in <- &batbq.LogMessage{&bigquery.StructSaver{
+				in <- &batbq.LogMessage{bigquery.StructSaver{
 					InsertID: "id",
 					Struct:   custom.Message{ID: "id", Val: 1},
 				}}
@@ -32,23 +33,22 @@ func TestMultiBatcher(t *testing.T) {
 		return in
 	}
 
-	putters := make(chan *putter, 100)
+	putters := make(chan *dummy.Putter, 100)
 
-	output := func(id batbq.PipelineID) batbq.Putter {
-		p := &putter{
-			name:       string(id),
-			writeDelay: time.Microsecond,
+	output := func(id batbq.ID) batbq.Putter {
+		p := &dummy.Putter{
+			Name:       string(id),
+			WriteDelay: time.Microsecond,
 		}
 		putters <- p
 		return p
 	}
 
-	for err := range mb.Process(context.Background(), input, output) {
-		assert.NoError(t, err)
-	}
+	err := mb.MustProcess(context.Background(), input, output)
+	assert.NoError(t, err)
 	close(putters)
 
 	for p := range putters {
-		assert.Equal(t, 200, p.Length())
+		assert.Equal(t, 200, p.GetLength())
 	}
 }

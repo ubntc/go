@@ -4,6 +4,8 @@ package main
 
 import (
 	"context"
+	"flag"
+	"log"
 	"os"
 	"time"
 
@@ -21,13 +23,21 @@ type Msg struct {
 	m *custom.Message // custom type providing data values and confirmation handlers
 }
 
-func (msg *Msg) Ack()           { msg.m.ConfirmMessage() }
-func (msg *Msg) Nack(err error) {}
+// Ack acknowledges the original message.
+func (msg *Msg) Ack() { msg.m.ConfirmMessage() }
+
+// Nack handles insert errors.
+func (msg *Msg) Nack(err error) { log.Print(err) }
+
+// Data returns the message as bigquery.StructSaver.
 func (msg *Msg) Data() *bigquery.StructSaver {
 	return &bigquery.StructSaver{InsertID: msg.m.ID, Struct: msg.m, Schema: schema}
 }
 
+var dry = flag.Bool("dry", false, "setup pipeline but do not run the batcher")
+
 func main() {
+	flag.Parse()
 	source := custom.NewSource("src_name") // custom data source
 
 	ctx := context.Background()
@@ -40,11 +50,15 @@ func main() {
 	}
 
 	input := make(chan batbq.Message, cfg.Capacity)
-	batcher := batbq.NewInsertBatcher(cfg)
+	batcher := batbq.NewInsertBatcher("custom_message", cfg)
 
 	go func() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })
 		close(input)
 	}()
+
+	if *dry {
+		return
+	}
 	batcher.Process(ctx, input, output)
 }

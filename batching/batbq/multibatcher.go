@@ -7,43 +7,41 @@ import (
 	"sync"
 )
 
-// PipelineID defines a specific batch pipeline.
-type PipelineID string
+// ID defines a specific batch pipeline.
+type ID string
 
 // MultiBatcher streams data to multiple outputs.
 type MultiBatcher struct {
-	ids []PipelineID
-	cfg BatcherConfig
+	ids  []ID
+	opts []batcherOption
 }
 
 // NewMultiBatcher returns a new MultiInsertBatcher
-func NewMultiBatcher(ids []string, cfg BatcherConfig) *MultiBatcher {
-	mib := &MultiBatcher{
-		cfg: cfg.WithDefaults(),
-	}
+func NewMultiBatcher(ids []string, opts ...batcherOption) *MultiBatcher {
+	mib := &MultiBatcher{opts: opts}
 	for _, id := range ids {
-		mib.ids = append(mib.ids, PipelineID(id))
+		mib.ids = append(mib.ids, ID(id))
 	}
 	return mib
 }
 
-// InputGetter returns an input channel for a given PipelineID.
-type InputGetter func(id PipelineID) <-chan Message
+// InputGetter returns an input channel for a given batcher ID.
+type InputGetter func(id ID) <-chan Message
 
-// OutputGetter returns a Putter for a given PipelineID.
-type OutputGetter func(id PipelineID) Putter
+// OutputGetter returns a Putter for a given batcher ID.
+type OutputGetter func(id ID) Putter
 
 // Process starts the batchers.
 func (mb *MultiBatcher) Process(ctx context.Context, input InputGetter, output OutputGetter) <-chan error {
-	batchers := make(map[PipelineID]*InsertBatcher)
+	batchers := make(map[ID]*InsertBatcher)
 
 	errchan := make(chan error, len(mb.ids))
 	var wg sync.WaitGroup
 	for _, id := range mb.ids {
-		ins := NewInsertBatcher(mb.cfg)
+		ins := NewInsertBatcher(id, mb.opts...)
 		batchers[id] = ins
 		wg.Add(1)
-		go func(id PipelineID) {
+		go func(id ID) {
 			defer wg.Done()
 			in := input(id)
 			out := output(id)
