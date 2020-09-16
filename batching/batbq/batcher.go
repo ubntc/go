@@ -62,36 +62,14 @@ func (ins *InsertBatcher) Process(ctx context.Context, input <-chan Message, out
 	defer ins.mu.Unlock()
 	ins.input = input
 	ins.output = output
-	workers := ins.metrics.NumWorkers.WithLabelValues(string(ins.id))
+
 	if ins.cfg.AutoScale {
-		autoscale(ctx, ins)
+		ins.autoscale(ctx)
 		return nil
 	}
 
-	workers.Inc()
 	ins.worker(ctx)
-	workers.Dec()
 	return nil
-}
-
-func handleErrors(messages []Message, err error) map[int]struct{} {
-	if err == nil {
-		return nil
-	}
-	nacked := make(map[int]struct{})
-	mulErr, isMulti := err.(bigquery.PutMultiError)
-	if isMulti {
-		for _, insErr := range mulErr {
-			messages[insErr.RowIndex].Nack(insErr.Errors)
-			nacked[insErr.RowIndex] = struct{}{}
-		}
-	} else {
-		for i, m := range messages {
-			nacked[i] = struct{}{}
-			m.Nack(err)
-		}
-	}
-	return nacked
 }
 
 func (ins *InsertBatcher) worker(ctx context.Context) {
@@ -106,6 +84,7 @@ func (ins *InsertBatcher) worker(ctx context.Context) {
 		output = ins.output
 		name   = string(ins.id)
 
+		workers       = ins.metrics.NumWorkers.WithLabelValues(name)
 		insertLatency = ins.metrics.InsertLatency.WithLabelValues(name)
 		ackLatency    = ins.metrics.AckLatency.WithLabelValues(name)
 		errCount      = ins.metrics.InsertErrors.WithLabelValues(name)
@@ -114,33 +93,19 @@ func (ins *InsertBatcher) worker(ctx context.Context) {
 		successCount  = ins.metrics.ProcessedMessages.WithLabelValues(name)
 	)
 
+	workers.Inc()
+	defer workers.Dec()
+
 	confirm := func(messages []Message, err error) {
 		// Ensure we wait for pending (n)acks after the batcher stops.
-
 		wg.Add(1)
 		go func() {
 			defer wg.Done() // allow the batcher to stop
 			tStart := time.Now()
-			nacked := handleErrors(messages, err)
-
-			switch {
-			case len(nacked) == len(messages):
-				// all messages were nacked
-			case len(nacked) == 0:
-				for _, m := range messages {
-					m.Ack()
-				}
-			default:
-				for i, m := range messages {
-					if _, ok := nacked[i]; ok {
-						continue
-					}
-					m.Ack()
-				}
-			}
+			acked, nacked := confirmMessages(messages, err)
 			ackLatency.Observe(time.Now().Sub(tStart).Seconds())
-			successCount.Add(float64(len(messages) - len(nacked)))
-			errCount.Add(float64(len(nacked)))
+			successCount.Add(float64(acked))
+			errCount.Add(float64(nacked))
 			batchCount.Add(1)
 		}()
 	}
@@ -160,7 +125,7 @@ func (ins *InsertBatcher) worker(ctx context.Context) {
 
 		confirm(batch, err)                      // use current slice to ack/nack processed messages
 		batch = make([]Message, 0, cfg.Capacity) // create a new slice to allow immediate refill
-		ticker.Reset(cfg.FlushInterval)          // reset the ticker to avoid too early flush
+		ticker.Reset(cfg.FlushInterval)          // reset the ticker to avoid too early next flush
 	}
 	defer flush()
 
@@ -180,4 +145,51 @@ func (ins *InsertBatcher) worker(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// confirmMessages acks and nacks `messages` in the context of a potential
+// batching `error` and returns the number of acked and nacked messages.
+func confirmMessages(messages []Message, err error) (numAcked int, numNacked int) {
+	nacked := handleErrors(messages, err)
+
+	switch {
+	case len(nacked) == len(messages):
+		// all messages had errors were nacked
+	case len(nacked) == 0:
+		// no messages had errors and can be acked
+		for _, m := range messages {
+			m.Ack()
+		}
+	default:
+		// some messages had errors, we need to check which
+		for i, m := range messages {
+			if _, ok := nacked[i]; ok {
+				continue
+			}
+			m.Ack()
+		}
+	}
+	return len(messages) - len(nacked), len(nacked)
+}
+
+// handleErrors nacks `messages` according to the type of the received `error`.
+// It returns an index of the nacked messages.
+func handleErrors(messages []Message, err error) (index map[int]struct{}) {
+	if err == nil {
+		return nil
+	}
+	nacked := make(map[int]struct{})
+	mulErr, isMulti := err.(bigquery.PutMultiError)
+	if isMulti {
+		for _, insErr := range mulErr {
+			messages[insErr.RowIndex].Nack(insErr.Errors)
+			nacked[insErr.RowIndex] = struct{}{}
+		}
+	} else {
+		for i, m := range messages {
+			nacked[i] = struct{}{}
+			m.Nack(err)
+		}
+	}
+	return nacked
 }

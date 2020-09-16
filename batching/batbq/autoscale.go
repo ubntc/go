@@ -9,14 +9,13 @@ import (
 
 // autoscale start and stops workers according to number of `ins.cfg.MinWorkers`,
 // `ins.cfg.MaxWorkerFactor`, and the number of queued messages on the `input` channel.
-func autoscale(ctx context.Context, ins *InsertBatcher) {
+func (ins *InsertBatcher) autoscale(ctx context.Context) {
 	var wg sync.WaitGroup
 
 	cfg := ins.cfg
 	hooks := make(map[context.Context]func())
 	mu := &sync.Mutex{}
 	input := ins.input
-	workers := ins.metrics.NumWorkers.WithLabelValues(string(ins.id))
 
 	addWorker := func() {
 		mu.Lock()
@@ -33,12 +32,10 @@ func autoscale(ctx context.Context, ins *InsertBatcher) {
 		go func() {
 			defer wg.Done()
 
-			workers.Inc()
 			ins.worker(wctx)
 
 			mu.Lock()
 			delete(hooks, wctx)
-			workers.Dec()
 			mu.Unlock()
 		}()
 	}
