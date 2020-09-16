@@ -16,6 +16,7 @@ func autoscale(ctx context.Context, ins *InsertBatcher) {
 	hooks := make(map[context.Context]func())
 	mu := &sync.Mutex{}
 	input := ins.input
+	workers := ins.metrics.NumWorkers.WithLabelValues(string(ins.id))
 
 	addWorker := func() {
 		mu.Lock()
@@ -27,17 +28,17 @@ func autoscale(ctx context.Context, ins *InsertBatcher) {
 		log.Printf("adding worker #%d", len(hooks)+1)
 		wctx, cancel := context.WithCancel(ctx)
 		hooks[wctx] = cancel
-		ins.metrics.SetWorkers(len(hooks))
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
+			workers.Inc()
 			ins.worker(wctx)
 
 			mu.Lock()
 			delete(hooks, wctx)
-			ins.metrics.SetWorkers(len(hooks))
+			workers.Dec()
 			mu.Unlock()
 		}()
 	}

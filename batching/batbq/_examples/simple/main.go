@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 	"time"
 
@@ -21,8 +22,13 @@ type Msg struct {
 	m *custom.Message // custom type providing data values and confirmation handlers
 }
 
-func (msg *Msg) Ack()           { msg.m.ConfirmMessage() }
-func (msg *Msg) Nack(err error) {}
+// Ack acknowledges the original message.
+func (msg *Msg) Ack() { msg.m.ConfirmMessage() }
+
+// Nack handles insert errors.
+func (msg *Msg) Nack(err error) { log.Print(err) }
+
+// Data returns the message as bigquery.StructSaver.
 func (msg *Msg) Data() *bigquery.StructSaver {
 	return &bigquery.StructSaver{InsertID: msg.m.ID, Struct: msg.m, Schema: schema}
 }
@@ -40,7 +46,7 @@ func main() {
 	}
 
 	input := make(chan batbq.Message, cfg.Capacity)
-	batcher := batbq.NewInsertBatcher(cfg)
+	batcher := batbq.NewInsertBatcher("custom_message", cfg)
 
 	go func() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })

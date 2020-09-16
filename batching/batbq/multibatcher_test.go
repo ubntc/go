@@ -17,13 +17,13 @@ func TestMultiBatcher(t *testing.T) {
 		batbq.BatcherConfig{},
 	)
 
-	input := func(id batbq.PipelineID) <-chan batbq.Message {
+	input := func(id batbq.ID) <-chan batbq.Message {
 		src := custom.NewSource(string(id))
 		in := make(chan batbq.Message, 10)
 		go func() {
 			defer close(in)
 			src.Receive(context.Background(), func(m *custom.Message) {
-				in <- &batbq.LogMessage{&bigquery.StructSaver{
+				in <- &batbq.LogMessage{bigquery.StructSaver{
 					InsertID: "id",
 					Struct:   custom.Message{ID: "id", Val: 1},
 				}}
@@ -34,7 +34,7 @@ func TestMultiBatcher(t *testing.T) {
 
 	putters := make(chan *putter, 100)
 
-	output := func(id batbq.PipelineID) batbq.Putter {
+	output := func(id batbq.ID) batbq.Putter {
 		p := &putter{
 			name:       string(id),
 			writeDelay: time.Microsecond,
@@ -43,9 +43,8 @@ func TestMultiBatcher(t *testing.T) {
 		return p
 	}
 
-	for err := range mb.Process(context.Background(), input, output) {
-		assert.NoError(t, err)
-	}
+	err := mb.MustProcess(context.Background(), input, output)
+	assert.NoError(t, err)
 	close(putters)
 
 	for p := range putters {

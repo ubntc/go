@@ -94,7 +94,7 @@ func main() {
 	}
 
 	input := make(chan batbq.Message, cfg.Capacity)
-	batcher := batbq.NewInsertBatcher(cfg)
+	batcher := batbq.NewInsertBatcher("clicks", cfg)
 
 	go subscription.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
 		msg, err := NewClickMessage(m)

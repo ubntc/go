@@ -16,7 +16,7 @@ type Message interface {
 // LogMessage implements the `Message` interface. A LogMessage
 // ignores the `Ack()` and logs a given error from `Nack(err error)`.
 type LogMessage struct {
-	*bigquery.StructSaver
+	bigquery.StructSaver
 }
 
 // Ack does nothing.
@@ -27,9 +27,9 @@ func (m *LogMessage) Nack(err error) {
 	log.Printf("LogMessage Nacked with error: %v, data: %v", err, m.Data())
 }
 
-// Data returns the embedded struct.
+// Data returns the embedded StructSaver.
 func (m *LogMessage) Data() *bigquery.StructSaver {
-	return m.StructSaver
+	return &m.StructSaver
 }
 
 func toStructs(messages []Message) []*bigquery.StructSaver {
