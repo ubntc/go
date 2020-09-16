@@ -47,7 +47,7 @@ func (msg *Msg) Ack() { msg.m.ConfirmMessage() }
 func (msg *Msg) Nack(err error) { log.Print(err) }
 
 // Data returns the message as bigquery.StructSaver.
-func (msg *Msg) Data() *bigquery.StructSaver {
+func (msg *Msg) Data() bigquery.ValueSaver {
 	return &bigquery.StructSaver{InsertID: msg.m.ID, Struct: msg.m, Schema: schema}
 }
 
@@ -87,12 +87,12 @@ as provided by the regular `bigquery.Inserter`.
 
 The `Put` method of a `bigquery.Inserter` will treat the given data as `bigquery.ValueSaver` or a
 compatible type. Therefore batbq calls `batbq.Message.Data()` on each passed `batbq.Message`, which
-must return a `*bigquery.StructSaver`.
+must return a `bigquery.ValueSaver`.
 
 Setting up a batch pipeline requires the following steps.
 
 1. Create a wrapping type that implements `batbq.Message` providing `Ack()`, `Nack(error)`,
-   and `Data() *bigquery.StructSaver`.
+   and `Data() bigquery.ValueSaver`.
 2. Create a `Putter` to receive the batches from the `InsertBatcher`.
 3. Create a `chan batbq.Message` channel to pass data to the `InsertBatcher`.
 4. In a goroutine, receive and wrap messages from a data source and send them to the channel.
