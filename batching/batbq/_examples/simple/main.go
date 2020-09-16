@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"time"
@@ -33,7 +34,10 @@ func (msg *Msg) Data() *bigquery.StructSaver {
 	return &bigquery.StructSaver{InsertID: msg.m.ID, Struct: msg.m, Schema: schema}
 }
 
+var dry = flag.Bool("dry", false, "setup pipeline but do not run the batcher")
+
 func main() {
+	flag.Parse()
 	source := custom.NewSource("src_name") // custom data source
 
 	ctx := context.Background()
@@ -52,5 +56,9 @@ func main() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })
 		close(input)
 	}()
+
+	if *dry {
+		return
+	}
 	batcher.Process(ctx, input, output)
 }

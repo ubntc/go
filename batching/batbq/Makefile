@@ -4,8 +4,8 @@ all: test cover
 test:
 	go test -race -timeout 3s ./...
 	go vet ./...
-	go run _examples/pubsub-to-bq/main.go -h 2> /dev/null
-	go run _examples/simple/main.go -h 2> /dev/null
+	go run _examples/pubsub-to-bq/main.go -dry
+	go run _examples/simple/main.go -dry
 
 cover:
 	../../scripts/cover.sh ./...

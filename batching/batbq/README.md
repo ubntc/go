@@ -69,6 +69,7 @@ func main() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })
 		close(input)
 	}()
+
 	batcher.Process(ctx, input, output)
 }
 ```
