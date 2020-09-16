@@ -2,53 +2,61 @@ package batbq_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
-	"time"
 
-	"cloud.google.com/go/bigquery"
 	"github.com/stretchr/testify/assert"
 	"github.com/ubntc/go/batching/batbq"
-	custom "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
 	dummy "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
 )
 
+func dummyData(topic batbq.ID, size int) []dummy.Message {
+	res := make([]dummy.Message, size)
+	for i := 0; i < size; i++ {
+		res[i] = dummy.Message{ID: string(topic) + "_msg_" + fmt.Sprint(i), Val: i}
+	}
+	return res
+}
+
+// GetInput demonstrates how to implement an InputGetter.
+func GetInput(id batbq.ID) <-chan batbq.Message {
+	src := dummy.NewSource(string(id))
+	src.Messages = dummyData(id, 10)
+	return src.Chan()
+}
+
+// GetInput demonstrates how to implement an OutputGetter.
+func GetOutput(id batbq.ID) batbq.Putter {
+	p := &dummy.Putter{Name: string(id)}
+	return p
+}
+
 func TestMultiBatcher(t *testing.T) {
+	testPutters := make(chan *dummy.Putter, 100)
+
+	// Example MultiBatcher Setup
+	// ==========================
+	// 1. Create a batcher with topic/table names.
 	mb := batbq.NewMultiBatcher(
 		[]string{"p1", "p2"},
-		batbq.BatcherConfig{},
 	)
 
-	input := func(id batbq.ID) <-chan batbq.Message {
-		src := custom.NewSource(string(id))
-		in := make(chan batbq.Message, 10)
-		go func() {
-			defer close(in)
-			src.Receive(context.Background(), func(m *custom.Message) {
-				in <- &batbq.LogMessage{bigquery.StructSaver{
-					InsertID: "id",
-					Struct:   custom.Message{ID: "id", Val: 1},
-				}}
-			})
-		}()
-		return in
-	}
+	// 2. Implement an InputGetter that returns the input chan `<-batbq.Message`.
+	getInput := GetInput
 
-	putters := make(chan *dummy.Putter, 100)
-
-	output := func(id batbq.ID) batbq.Putter {
-		p := &dummy.Putter{
-			Name:       string(id),
-			WriteDelay: time.Microsecond,
-		}
-		putters <- p
+	// 3. Implement an OutputGetter that returns an output `batbq.Putter`.
+	getOutput := func(id batbq.ID) batbq.Putter {
+		p := GetOutput(id)
+		testPutters <- p.(*dummy.Putter)
 		return p
 	}
 
-	err := mb.MustProcess(context.Background(), input, output)
-	assert.NoError(t, err)
-	close(putters)
+	// 4. Start the multi batcher with mb.Process or mb.MustProcess.
+	err := mb.MustProcess(context.Background(), getInput, getOutput)
 
-	for p := range putters {
-		assert.Equal(t, 200, p.GetLength())
+	assert.NoError(t, err)
+	close(testPutters)
+	for p := range testPutters {
+		assert.Equal(t, 10, p.GetLength())
 	}
 }
