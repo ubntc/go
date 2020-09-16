@@ -22,7 +22,7 @@ func NewSource(name string) *Source {
 	return &Source{name: name}
 }
 
-// Receive produces 200 raw dummy messages and sends then via the given message handler `f`.
+// Receive produces 200 raw dummy messages and sends them via the given message handler `f`.
 func (src *Source) Receive(ctx context.Context, f func(m *Message)) {
 	i := 0
 	for {

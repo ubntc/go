@@ -11,7 +11,7 @@ type Message struct {
 // ConfirmMessage does nothing.
 func (m *Message) ConfirmMessage() {}
 
-// Save implements the Putter interface.
+// Save implements the ValueSaver interface.
 func (m *Message) Save() (row map[string]bigquery.Value, insertID string, err error) {
 	v := bigquery.Value(m.Val)
 	return map[string]bigquery.Value{"val": v}, m.ID, nil

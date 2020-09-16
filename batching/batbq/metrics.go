@@ -8,8 +8,8 @@ import (
 
 // metrics labels
 const (
-	BatBq    = "batbq"
-	Pipeline = "pipeline"
+	BATBQ   = "batbq"
+	BATCHER = "batcher"
 )
 
 // Metrics stores Batcher Metrics.
@@ -25,42 +25,42 @@ type Metrics struct {
 
 func newMetrics(prefix ...string) *Metrics {
 	ns := strings.Join(prefix, "_")
-	label := []string{Pipeline}
+	label := []string{BATCHER}
 	return &Metrics{
 		NumWorkers: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name:      "workers",
 			Namespace: ns,
-			Subsystem: BatBq,
+			Subsystem: BATBQ,
 		}, label),
 		ProcessedMessages: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name:      "processed_messages_total",
 			Namespace: ns,
-			Subsystem: BatBq,
+			Subsystem: BATBQ,
 		}, label),
 		ProcessedBatches: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name:      "processed_batches_total",
 			Namespace: ns,
-			Subsystem: BatBq,
+			Subsystem: BATBQ,
 		}, label),
 		ReceivedMessages: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name:      "received_messages_total",
 			Namespace: ns,
-			Subsystem: BatBq,
+			Subsystem: BATBQ,
 		}, label),
 		InsertErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name:      "insert_errors_total",
 			Namespace: ns,
-			Subsystem: BatBq,
+			Subsystem: BATBQ,
 		}, label),
 		InsertLatency: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name:      "insert_latency_seconds",
 			Namespace: ns,
-			Subsystem: BatBq,
+			Subsystem: BATBQ,
 		}, label),
 		AckLatency: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name:      "ack_latency_seconds",
 			Namespace: ns,
-			Subsystem: BatBq,
+			Subsystem: BATBQ,
 		}, label),
 	}
 }
