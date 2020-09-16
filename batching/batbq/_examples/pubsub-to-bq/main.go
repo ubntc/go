@@ -43,7 +43,7 @@ func (c *ClickMessage) Nack(err error) {
 }
 
 // Data returns the BigQuery data using the pubsub message ID as bigquery InsertID.
-func (c *ClickMessage) Data() *bigquery.StructSaver {
+func (c *ClickMessage) Data() bigquery.ValueSaver {
 	return &bigquery.StructSaver{Schema: clickSchema, InsertID: c.m.ID, Struct: &c.Click}
 }
 

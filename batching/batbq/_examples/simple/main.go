@@ -30,7 +30,7 @@ func (msg *Msg) Ack() { msg.m.ConfirmMessage() }
 func (msg *Msg) Nack(err error) { log.Print(err) }
 
 // Data returns the message as bigquery.StructSaver.
-func (msg *Msg) Data() *bigquery.StructSaver {
+func (msg *Msg) Data() bigquery.ValueSaver {
 	return &bigquery.StructSaver{InsertID: msg.m.ID, Struct: msg.m, Schema: schema}
 }
 

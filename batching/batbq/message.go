@@ -8,7 +8,7 @@ import (
 
 // Message defines an (n)ackable message that contains the data for BigQuery.
 type Message interface {
-	Data() *bigquery.StructSaver
+	Data() bigquery.ValueSaver
 	Ack()
 	Nack(err error)
 }
@@ -29,12 +29,12 @@ func (m *LogMessage) Nack(err error) {
 }
 
 // Data returns the embedded StructSaver.
-func (m *LogMessage) Data() *bigquery.StructSaver {
+func (m *LogMessage) Data() bigquery.ValueSaver {
 	return &m.StructSaver
 }
 
-func toStructs(messages []Message) []*bigquery.StructSaver {
-	res := make([]*bigquery.StructSaver, len(messages))
+func toStructs(messages []Message) []bigquery.ValueSaver {
+	res := make([]bigquery.ValueSaver, len(messages))
 	for i, m := range messages {
 		res[i] = m.Data()
 	}
