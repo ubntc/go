@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/ubntc/go/batching/batbq"
 	custom "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
+	dummy "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
 )
 
 func TestMultiBatcher(t *testing.T) {
@@ -32,12 +33,12 @@ func TestMultiBatcher(t *testing.T) {
 		return in
 	}
 
-	putters := make(chan *putter, 100)
+	putters := make(chan *dummy.Putter, 100)
 
 	output := func(id batbq.ID) batbq.Putter {
-		p := &putter{
-			name:       string(id),
-			writeDelay: time.Microsecond,
+		p := &dummy.Putter{
+			Name:       string(id),
+			WriteDelay: time.Microsecond,
 		}
 		putters <- p
 		return p
@@ -48,6 +49,6 @@ func TestMultiBatcher(t *testing.T) {
 	close(putters)
 
 	for p := range putters {
-		assert.Equal(t, 200, p.Length())
+		assert.Equal(t, 200, p.GetLength())
 	}
 }

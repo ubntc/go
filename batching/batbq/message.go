@@ -13,8 +13,9 @@ type Message interface {
 	Nack(err error)
 }
 
-// LogMessage implements the `Message` interface. A LogMessage
-// ignores the `Ack()` and logs a given error from `Nack(err error)`.
+// LogMessage implements the `Message` interface. A LogMessage ignores the `Ack()` and logs a given
+// error from `Nack(err error)`. Use it for testing and for naive data pipelines that do not require
+// acknowledging messages.
 type LogMessage struct {
 	bigquery.StructSaver
 }

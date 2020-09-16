@@ -8,8 +8,12 @@ const (
 	DefaultFlushInterval = time.Second // when to send partially filled batches
 	DefaultMinWorkers    = 1
 	DefaultMaxWorkers    = 10
+)
 
-	DrainedDivisor = 10 // divisor applied to input channel length to check for drained channels
+// Settings for worker scaling.
+var (
+	DrainedRatio = 0.2 // channel size relative to the batcher capacity at which the batcher is drained
+	StalledRatio = 0.8 // channel size relative to the batcher capacity at which the batcher is stalled
 )
 
 // WorkerConfig defines how many workers to use.

@@ -3,6 +3,7 @@ package batbq
 import (
 	"context"
 	"log"
+	"math"
 	"sync"
 	"time"
 )
@@ -68,9 +69,9 @@ func (ins *InsertBatcher) autoscale(ctx context.Context) {
 		for {
 			<-tick.C
 			switch {
-			case len(input) >= cfg.Capacity:
+			case len(input) >= StalledCapacity(cfg.Capacity):
 				addWorker()
-			case len(input) < cfg.Capacity/DrainedDivisor:
+			case len(input) < DrainedCapacity(cfg.Capacity):
 				rmWorker()
 			}
 		}
@@ -78,4 +79,22 @@ func (ins *InsertBatcher) autoscale(ctx context.Context) {
 
 	wg.Wait()   // wait for all workers to finish
 	tick.Stop() // stop worker scaling
+}
+
+// StalledCapacity computes the absolute stalled capacity from the global StalledRatio.
+func StalledCapacity(capacity int) int {
+	if capacity <= 0 {
+		return 0
+	}
+	stalled := int(math.Ceil(float64(capacity) * StalledRatio))
+	return stalled
+}
+
+// DrainedCapacity computes the absolute drained capacity from the global DrainedRatio.
+func DrainedCapacity(capacity int) int {
+	if capacity == 0 {
+		return 0
+	}
+	drained := int(math.Floor(float64(capacity) * DrainedRatio))
+	return drained
 }
