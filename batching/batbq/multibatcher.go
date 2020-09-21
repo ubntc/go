@@ -7,9 +7,6 @@ import (
 	"sync"
 )
 
-// ID defines a specific batch pipeline.
-type ID string
-
 // MultiBatcher streams data to multiple outputs.
 type MultiBatcher struct {
 	ids  []ID
@@ -56,8 +53,6 @@ func (mb *MultiBatcher) Process(ctx context.Context, input InputGetter, output O
 		wg.Wait()
 		close(errchan)
 	}()
-
-	// TODO: go func() { collects joint metrics from `batchers` by `id` }
 
 	return errchan
 }

@@ -4,10 +4,11 @@ import "time"
 
 // BatcherConfig defaults.
 const (
-	DefaultScaleInterval = time.Second // how often to trigger worker scaling
-	DefaultFlushInterval = time.Second // when to send partially filled batches
-	DefaultMinWorkers    = 1
-	DefaultMaxWorkers    = 10
+	DefaultScaleInterval     = 5 * time.Second // how often to trigger worker scaling
+	DefaultScaleObservations = 5               // num batches to be watched before triggering scaling
+	DefaultFlushInterval     = time.Second     // when to send partially filled batches
+	DefaultMinWorkers        = 1
+	DefaultMaxWorkers        = 10
 )
 
 // Settings for worker scaling.
@@ -49,6 +50,10 @@ func (cfg BatcherConfig) WithDefaults() BatcherConfig {
 	}
 	if cfg.ScaleInterval <= 0 {
 		cfg.ScaleInterval = DefaultScaleInterval
+	}
+	if !cfg.AutoScale {
+		cfg.MaxWorkers = 1
+		cfg.MinWorkers = 1
 	}
 	return cfg
 }

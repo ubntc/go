@@ -1,6 +1,6 @@
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4)](https://pkg.go.dev/mod/github.com/ubntc/go/batching/batbq)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ubntc/go/batcher/batbq)](https://goreportcard.com/report/github.com/ubntc/go/batcher/batbq)
-[![cover-badge](https://img.shields.io/badge/coverage-89%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
+[![cover-badge](https://img.shields.io/badge/coverage-66%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
 
 # Batched BigQuery Inserter
 
@@ -22,6 +22,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"time"
@@ -44,7 +45,11 @@ type Msg struct {
 func (msg *Msg) Ack() { msg.m.ConfirmMessage() }
 
 // Nack handles insert errors.
-func (msg *Msg) Nack(err error) { log.Print(err) }
+func (msg *Msg) Nack(err error) {
+	if err != nil {
+		log.Print(err)
+	}
+}
 
 // Data returns the message as bigquery.StructSaver.
 func (msg *Msg) Data() bigquery.ValueSaver {
@@ -75,7 +80,7 @@ func main() {
 }
 ```
 
-Also see the [PubSub to BigQuery](_examples/pubsub-to-bq/main.go) example.
+Also see the [PubSub to BigQuery](_examples/ps2bq/main.go) example.
 
 
 ## Batcher Design
@@ -103,7 +108,7 @@ For instance, if your data source is PubSub, first register a message handler us
 `pubsub.Message` in a `batbq.Message` and sending it to the input channel.
 Then start the batcher to receive and batch these messages. The batcher will stop if the context
 is canceled or the input channel is closed; there is no "stop" method.
-See the full [PubSub to BigQuery](_examples/pubsub-to-bq/main.go) example for more details and
+See the full [PubSub to BigQuery](_examples/ps2bq/main.go) example for more details and
 options.
 
 ## Worker Scaling

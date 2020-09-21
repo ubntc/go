@@ -27,7 +27,11 @@ type Msg struct {
 func (msg *Msg) Ack() { msg.m.ConfirmMessage() }
 
 // Nack handles insert errors.
-func (msg *Msg) Nack(err error) { log.Print(err) }
+func (msg *Msg) Nack(err error) {
+	if err != nil {
+		log.Print(err)
+	}
+}
 
 // Data returns the message as bigquery.StructSaver.
 func (msg *Msg) Data() bigquery.ValueSaver {
