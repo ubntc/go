@@ -1,6 +1,6 @@
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4)](https://pkg.go.dev/mod/github.com/ubntc/go/batching/batbq)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ubntc/go/batcher/batbq)](https://goreportcard.com/report/github.com/ubntc/go/batcher/batbq)
-[![cover-badge](https://img.shields.io/badge/coverage-89%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
+[![cover-badge](https://img.shields.io/badge/coverage-66%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
 
 # Batched BigQuery Inserter
 
@@ -22,6 +22,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"time"
@@ -44,14 +45,21 @@ type Msg struct {
 func (msg *Msg) Ack() { msg.m.ConfirmMessage() }
 
 // Nack handles insert errors.
-func (msg *Msg) Nack(err error) { log.Print(err) }
+func (msg *Msg) Nack(err error) {
+	if err != nil {
+		log.Print(err)
+	}
+}
 
 // Data returns the message as bigquery.StructSaver.
 func (msg *Msg) Data() bigquery.ValueSaver {
 	return &bigquery.StructSaver{InsertID: msg.m.ID, Struct: msg.m, Schema: schema}
 }
 
+var dry = flag.Bool("dry", false, "setup pipeline but do not run the batcher")
+
 func main() {
+	flag.Parse()
 	source := custom.NewSource("src_name") // custom data source
 
 	ctx := context.Background()
@@ -71,6 +79,9 @@ func main() {
 		close(input)
 	}()
 
+	if *dry {
+		return
+	}
 	batcher.Process(ctx, input, output)
 }
 ```

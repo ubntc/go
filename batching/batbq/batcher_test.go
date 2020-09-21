@@ -160,8 +160,15 @@ func TestBatcherRegisterMetrics(t *testing.T) {
 func TestDefaults(t *testing.T) {
 	cfg := batbq.BatcherConfig{}
 	def := cfg.WithDefaults()
-	assert.Equal(t, batbq.BatcherConfig{}, cfg, "orig config must be modified")
-	assert.Equal(t, batbq.DefaultMinWorkers, def.MinWorkers)
-	assert.Equal(t, batbq.DefaultMaxWorkers, def.MaxWorkers)
+	assert.Equal(t, batbq.BatcherConfig{}, cfg, "orig config must not be modified")
 	assert.Equal(t, batbq.DefaultFlushInterval, def.FlushInterval)
+	assert.Equal(t, 1, def.MaxWorkers)
+	assert.Equal(t, 1, def.MinWorkers)
+
+	cfg = batbq.BatcherConfig{}
+	cfg.AutoScale = true
+	def = cfg.WithDefaults()
+	assert.Equal(t, batbq.DefaultMaxWorkers, def.MaxWorkers)
+	assert.Equal(t, batbq.DefaultMinWorkers, def.MinWorkers)
+
 }
