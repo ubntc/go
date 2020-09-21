@@ -56,10 +56,7 @@ func (msg *Msg) Data() bigquery.ValueSaver {
 	return &bigquery.StructSaver{InsertID: msg.m.ID, Struct: msg.m, Schema: schema}
 }
 
-var dry = flag.Bool("dry", false, "setup pipeline but do not run the batcher")
-
 func main() {
-	flag.Parse()
 	source := custom.NewSource("src_name") // custom data source
 
 	ctx := context.Background()
@@ -79,14 +76,11 @@ func main() {
 		close(input)
 	}()
 
-	if *dry {
-		return
-	}
 	batcher.Process(ctx, input, output)
 }
 ```
 
-Also see the [PubSub to BigQuery](_examples/pubsub-to-bq/main.go) example.
+Also see the [PubSub to BigQuery](_examples/ps2bq/main.go) example.
 
 
 ## Batcher Design
@@ -114,7 +108,7 @@ For instance, if your data source is PubSub, first register a message handler us
 `pubsub.Message` in a `batbq.Message` and sending it to the input channel.
 Then start the batcher to receive and batch these messages. The batcher will stop if the context
 is canceled or the input channel is closed; there is no "stop" method.
-See the full [PubSub to BigQuery](_examples/pubsub-to-bq/main.go) example for more details and
+See the full [PubSub to BigQuery](_examples/ps2bq/main.go) example for more details and
 options.
 
 ## Worker Scaling
