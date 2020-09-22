@@ -4,17 +4,11 @@ import "time"
 
 // BatcherConfig defaults.
 const (
-	DefaultScaleInterval     = 5 * time.Second // how often to trigger worker scaling
-	DefaultScaleObservations = 5               // num batches to be watched before triggering scaling
+	DefaultScaleInterval     = 3 * time.Second // how often to trigger worker scaling
+	DefaultScaleObservations = 10              // num batches to be watched before triggering scaling
 	DefaultFlushInterval     = time.Second     // when to send partially filled batches
 	DefaultMinWorkers        = 1
 	DefaultMaxWorkers        = 10
-)
-
-// Settings for worker scaling.
-var (
-	DrainedRatio = 0.2 // channel size relative to the batcher capacity at which the batcher is drained
-	StalledRatio = 0.8 // channel size relative to the batcher capacity at which the batcher is stalled
 )
 
 // WorkerConfig defines how many workers to use.

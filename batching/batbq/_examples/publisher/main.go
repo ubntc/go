@@ -86,8 +86,8 @@ func main() {
 	var (
 		project      = flag.String("p", os.Getenv("GOOGLE_CLOUD_PROJECT"), "Project ID")
 		topic        = flag.String("t", "clicks", "Subscription Name")
-		sendInterval = flag.Duration("d", time.Millisecond*100, "duration between test demo messages")
-		concurrency  = flag.Int("c", 10, "concurrency level")
+		sendInterval = flag.Duration("d", time.Millisecond, "duration between test demo messages")
+		concurrency  = flag.Int("c", 100, "concurrency level")
 	)
 	flag.Parse()
 

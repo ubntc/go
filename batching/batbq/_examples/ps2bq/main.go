@@ -114,7 +114,7 @@ func main() {
 	output := tab.Inserter()
 
 	sub := psClient.Subscription(*topic + *subfix)
-	sub.ReceiveSettings.MaxOutstandingMessages = cfg.Capacity * cfg.MaxWorkers
+	sub.ReceiveSettings.MaxOutstandingMessages = 10000
 
 	batcher := batbq.NewInsertBatcher("clicks", cfg)
 

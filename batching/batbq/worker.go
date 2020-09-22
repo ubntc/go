@@ -53,9 +53,6 @@ func (ins *InsertBatcher) worker(ctx context.Context, num int) {
 		return err
 	}
 
-	ticker := time.NewTicker(cfg.FlushInterval)
-	defer ticker.Stop()
-
 	flush := func() {
 		switch len(batch) {
 		case 0:
@@ -79,6 +76,9 @@ func (ins *InsertBatcher) worker(ctx context.Context, num int) {
 		batch = make([]Message, 0, cfg.Capacity) // create a new slice to allow immediate refill
 	}
 	defer flush()
+
+	ticker := time.NewTicker(cfg.FlushInterval)
+	defer ticker.Stop()
 
 	log.Printf("starting worker #%d", num)
 	defer log.Printf("worker #%d stopped ", num)

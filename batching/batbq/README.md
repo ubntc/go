@@ -110,10 +110,14 @@ Setting up a batch pipeline requires the following steps.
 
 1. Create a custom message type that implements `batbq.Message` providing `Ack()`, `Nack(error)`,
    and `Data() bigquery.ValueSaver`.
+
 2. Create a `Putter` to receive the batches from the `InsertBatcher`.
+
 3. Create a `chan batbq.Message` to pass data to the `InsertBatcher`.
+
 4. In a goroutine, receive and wrap messages from a data source and send them to the channel as
    `batbq.Message`.
+
 5. Start the batcher using its `Process(context.Context, <-chan batbq.Message, Putter)` method.
 
 For instance, if your data source is PubSub, first register a message handler using
@@ -124,25 +128,17 @@ is canceled or the input channel is closed; there is no "stop" method.
 See the full [PubSub to BigQuery](_examples/ps2bq/main.go) example for more details and
 options.
 
-## Worker Scaling
+## Scaling Parameters
 
 Internally batbq uses a blocking [`worker(...)`](worker.go) function to process data from the input
-channel forever.
+channel into the current batch. Filled batches are sent to the `Putter` asynchronously.
+This introduces a concurrency level that can be controlled on the sender-side by limiting the number
+of pending (unconfirmed) messages.
 
-The worker will NOT stop reading data if the `Putter` or the message confirmation is stalled.
-The calls to `Put(...)`, `Ack()`, and `Nack(error)` are fully asynchronous.
-The sender must handle when to stop sending data; based on the number of unconfirmed messages.
+For PubSub, this can done by setting `MaxOutstandingMessages` on a `pubsub.Subscription`.
 
-Reading from the input channel into the current batch is done in one goroutine to avoid data races.
-This can be a bottleneck and may require using more than one worker to read from the same channel.
-
-If `BatcherConfig.AutoScale` is `true` the batcher will concurrently run more workers based on the
-observed batch load and the [configured](config.go) `MinWorkers` and `MaxWorkers`.
-
-Using multiple workers, results in more batches being collected and sent concurrently via
-`output.Put(ctx, batch)`. However, all workers share the same `input <-chan batbq.Message` and the
-same `output Putter`. Both, data source and output, must be concurrency-safe by supporting
-concurrent calls of `Ack()`, `Nack(error)`, and `Put(ctx, batch)`.
+For most use cases this should be sufficient and you can leave `BatcherConfig.AutoScale = false`
+(default). See [SCALING.md](SCALING.md) for more details and benchmarks.
 
 ## Multi Batching
 
