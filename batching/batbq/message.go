@@ -8,9 +8,9 @@ import (
 
 // Message defines an (n)ackable message that contains the data for BigQuery.
 type Message interface {
-	Data() bigquery.ValueSaver
-	Ack()
-	Nack(err error)
+	Data() bigquery.ValueSaver // Data returns a ValueSaver for the bigquery.Inserter
+	Ack()                      // Ack confirms successful processing of the message at the sender.
+	Nack(err error)            // Nack reports unsuccessful processing and errors to the sender.
 }
 
 // LogMessage implements the `Message` interface. A LogMessage ignores the `Ack()` and logs a given

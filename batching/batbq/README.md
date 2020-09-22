@@ -8,11 +8,11 @@
 
 Batbq package implements batching of messages for the `bigquery.Inserter` and provides the following features:
 
-1. batching of messages from a channel into a slice to sent to BigQuery,
+1. batching of messages from a channel into a slice to be sent to BigQuery,
 2. time-based flushing of partially filled batches,
 3. row-wise handling of insert errors,
 4. confirmation of messages at the sender (Ack/Nack),
-5. pipeline metrics for one or more batchers,
+5. comprehensive pipeline metrics for one or more batchers,
 6. basic autoscaling to create batches in parallel from an input channel.
 
 ## Usage
@@ -85,22 +85,35 @@ Also see the [PubSub to BigQuery](_examples/ps2bq/main.go) example.
 
 ## Batcher Design
 
-The package provides an `InsertBatcher` that requires an `input <-chan batbq.Message` channel to
-collect individual messages from a streaming data source as shown in the [examples](./_examples).
+The package provides an `InsertBatcher` that requires an `input <-chan batbq.Message` to collect
+individual messages from a streaming data source as shown in the [examples](_examples).
 The `InsertBatcher` also requires a `Putter` that implements `Put(context.Context, interface{})`
-as provided by the regular `bigquery.Inserter`.
+as provided by the regular `bigquery.Inserter`. Messages that are `Put` into the `bigquery.Inserter`
+need to implement the `bigquery.ValueSaver`.
 
-The `Put` method of a `bigquery.Inserter` will treat the given data as `bigquery.ValueSaver` or a
-compatible type. Therefore batbq calls `batbq.Message.Data()` on each passed `batbq.Message`, which
-must return a `bigquery.ValueSaver`.
+Batbq defines a [`batbq.Message`](message.go) interface to handle the following requirements.
+
+* Provide `bigquery.ValueSaver` data.
+* Handle insert errors.
+* Implement message confirmation using `Ack` and `Nack`.
+
+```golang
+// Message defines an (n)ackable message that contains the data for BigQuery.
+type Message interface {
+	Data() bigquery.ValueSaver // Data returns a ValueSaver for the bigquery.Inserter
+	Ack()                      // Ack confirms successful processing of the message at the sender.
+	Nack(err error)            // Nack reports unsuccessful processing and errors to the sender.
+}
+```
 
 Setting up a batch pipeline requires the following steps.
 
-1. Create a wrapping type that implements `batbq.Message` providing `Ack()`, `Nack(error)`,
+1. Create a custom message type that implements `batbq.Message` providing `Ack()`, `Nack(error)`,
    and `Data() bigquery.ValueSaver`.
 2. Create a `Putter` to receive the batches from the `InsertBatcher`.
-3. Create a `chan batbq.Message` channel to pass data to the `InsertBatcher`.
-4. In a goroutine, receive and wrap messages from a data source and send them to the channel.
+3. Create a `chan batbq.Message` to pass data to the `InsertBatcher`.
+4. In a goroutine, receive and wrap messages from a data source and send them to the channel as
+   `batbq.Message`.
 5. Start the batcher using its `Process(context.Context, <-chan batbq.Message, Putter)` method.
 
 For instance, if your data source is PubSub, first register a message handler using
@@ -113,18 +126,18 @@ options.
 
 ## Worker Scaling
 
-Internally batbq uses a blocking `worker(context.Context)` function to process data from the input
-channel forever. If the `Putter` (usually a `bigquery.Inserter`) is stalled, the worker will also
-stop reading data.
+Internally batbq uses a blocking [`worker(...)`](worker.go) function to process data from the input
+channel forever.
 
-Note that the worker will NOT automatically stop reading data if the message confirmation is stalled
-through unanswered calls to `Ack()` or `Nack(error)`. Message confirmation is fully asynchronous and
-the sender must handle when to stop sending data (based on the number of unconfirmed messages).
+The worker will NOT stop reading data if the `Putter` or the message confirmation is stalled.
+The calls to `Put(...)`, `Ack()`, and `Nack(error)` are fully asynchronous.
+The sender must handle when to stop sending data; based on the number of unconfirmed messages.
 
-If `BatcherConfig.AutoScale` is `true` the batcher will concurrently run one or workers based on the
-size of the input channel and the [configured](config.go) `MinWorkers` and `MaxWorkers`. For this to
-work correctly, the input channel capacity must be equal to the [configured](config.go) batching
-`Capacity`.
+Reading from the input channel into the current batch is done in one goroutine to avoid data races.
+This can be a bottleneck and may require using more than one worker to read from the same channel.
+
+If `BatcherConfig.AutoScale` is `true` the batcher will concurrently run more workers based on the
+observed batch load and the [configured](config.go) `MinWorkers` and `MaxWorkers`.
 
 Using multiple workers, results in more batches being collected and sent concurrently via
 `output.Put(ctx, batch)`. However, all workers share the same `input <-chan batbq.Message` and the
