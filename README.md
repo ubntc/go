@@ -6,7 +6,7 @@ This repository hosts the following projects.
 Basic CLI-enhancements for your Go-services, incl. input commands, human-friendly logging, and
 OS-signal handling.
 
-## [BatSub: ubntc/go/batchers/batbq](/batching/batbq)
+## [BatBq: ubntc/go/batchers/batbq](/batching/batbq)
 Capacity and interval-based batch writing of rows to BigQuery.
 
 ## [BatSub: ubntc/go/batchers/batsub](/batching/batsub)
