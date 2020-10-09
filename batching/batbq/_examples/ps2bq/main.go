@@ -14,6 +14,7 @@ import (
 	"github.com/ubntc/go/metrics"
 
 	clicks "github.com/ubntc/go/batching/batbq/_examples/ps2bq/clicks"
+	"github.com/ubntc/go/batching/batbq/config"
 	"github.com/ubntc/go/batching/batbq/patcher"
 )
 
@@ -102,10 +103,10 @@ func main() {
 	exitOnErr(err)
 	defer bqClient.Close()
 
-	cfg := batbq.BatcherConfig{
+	cfg := config.BatcherConfig{
 		Capacity:      *cap,
 		FlushInterval: time.Second,
-		WorkerConfig: batbq.WorkerConfig{
+		WorkerConfig: config.WorkerConfig{
 			AutoScale: true,
 		},
 	}.WithDefaults()
@@ -117,7 +118,7 @@ func main() {
 	sub := psClient.Subscription(*topic + *subfix)
 	sub.ReceiveSettings.MaxOutstandingMessages = 10000
 
-	batcher := batbq.NewInsertBatcher("clicks", cfg)
+	batcher := batbq.NewInsertBatcher("clicks", batbq.WithConfig(cfg))
 
 	if *stats {
 		metrics.Watch(ctx, batcher.Metrics())

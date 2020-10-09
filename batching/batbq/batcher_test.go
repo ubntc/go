@@ -11,6 +11,7 @@ import (
 	"github.com/ubntc/go/batching/batbq"
 
 	dummy "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
+	"github.com/ubntc/go/batching/batbq/config"
 )
 
 type timing struct {
@@ -59,10 +60,10 @@ func testRun(t *testing.T, spec testSpec) *testResults {
 		WriteDelay: spec.timing.writeDelay,
 	}
 
-	batcher := batbq.NewInsertBatcher("test", batbq.BatcherConfig{
+	batcher := batbq.NewInsertBatcher("test", &batbq.WithConfig{
 		Capacity:      spec.cap,
 		FlushInterval: spec.timing.dur,
-		WorkerConfig: batbq.WorkerConfig{
+		WorkerConfig: config.WorkerConfig{
 			ScaleInterval: spec.timing.scaleInterval,
 			AutoScale:     spec.timing.autoScale,
 		},
@@ -113,7 +114,7 @@ func TestWorkerScaling(t *testing.T) {
 	// assert.GreaterOrEqual(t, res.MaxWorkers, 2, "at least one extra worker must have started")
 }
 
-var testConfig = batbq.BatcherConfig{Capacity: 10, FlushInterval: 10 * time.Millisecond}
+var testConfig = batbq.WithConfig{Capacity: 10, FlushInterval: 10 * time.Millisecond}
 
 func TestHandleInsertErrors(t *testing.T) {
 	ins := batbq.NewInsertBatcher("test", testConfig)
@@ -158,17 +159,17 @@ func TestBatcherRegisterMetrics(t *testing.T) {
 }
 
 func TestDefaults(t *testing.T) {
-	cfg := batbq.BatcherConfig{}
+	cfg := config.BatcherConfig{}
 	def := cfg.WithDefaults()
-	assert.Equal(t, batbq.BatcherConfig{}, cfg, "orig config must not be modified")
-	assert.Equal(t, batbq.DefaultFlushInterval, def.FlushInterval)
+	assert.Equal(t, config.BatcherConfig{}, cfg, "orig config must not be modified")
+	assert.Equal(t, config.DefaultFlushInterval, def.FlushInterval)
 	assert.Equal(t, 1, def.MaxWorkers)
 	assert.Equal(t, 1, def.MinWorkers)
 
-	cfg = batbq.BatcherConfig{}
+	cfg = config.BatcherConfig{}
 	cfg.AutoScale = true
 	def = cfg.WithDefaults()
-	assert.Equal(t, batbq.DefaultMaxWorkers, def.MaxWorkers)
-	assert.Equal(t, batbq.DefaultMinWorkers, def.MinWorkers)
+	assert.Equal(t, config.DefaultMaxWorkers, def.MaxWorkers)
+	assert.Equal(t, config.DefaultMinWorkers, def.MinWorkers)
 
 }

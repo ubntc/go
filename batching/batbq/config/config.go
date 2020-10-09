@@ -1,4 +1,4 @@
-package batbq
+package config
 
 import "time"
 
@@ -26,11 +26,6 @@ type BatcherConfig struct {
 	WorkerConfig
 }
 
-// Apply sets the batchers config.
-func (cfg BatcherConfig) Apply(ins *InsertBatcher) {
-	ins.cfg = cfg.WithDefaults()
-}
-
 // WithDefaults loads defaults values for unset values and returns the merged config.
 func (cfg BatcherConfig) WithDefaults() BatcherConfig {
 	if cfg.FlushInterval <= 0 {
@@ -50,14 +45,4 @@ func (cfg BatcherConfig) WithDefaults() BatcherConfig {
 		cfg.MinWorkers = 1
 	}
 	return cfg
-}
-
-// WithMetrics sets the batchers metrics.
-type WithMetrics struct {
-	*Metrics
-}
-
-// Apply applies the option.
-func (m *WithMetrics) Apply(ins *InsertBatcher) {
-	ins.metrics = m.Metrics
 }

@@ -11,6 +11,8 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"github.com/ubntc/go/batching/batbq"
+	"github.com/ubntc/go/batching/batbq/config"
+
 	custom "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
 )
 
@@ -48,13 +50,13 @@ func main() {
 	client, _ := bigquery.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
 	output := client.Dataset("tmp").Table("batbq").Inserter()
 
-	cfg := batbq.BatcherConfig{
+	cfg := config.BatcherConfig{
 		Capacity:      100,
 		FlushInterval: time.Second,
 	}
 
 	input := make(chan batbq.Message, cfg.Capacity)
-	batcher := batbq.NewInsertBatcher("custom_message", cfg)
+	batcher := batbq.NewInsertBatcher("custom_message", batbq.WithConfig(cfg))
 
 	go func() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })

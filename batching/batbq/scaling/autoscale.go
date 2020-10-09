@@ -1,4 +1,4 @@
-package batbq
+package scaling
 
 import (
 	"context"
@@ -6,21 +6,25 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"github.com/ubntc/go/batching/batbq/config"
 )
 
-// scalingStatus safely tracks the load level and scaling status.
-type scalingStatus struct {
+// Status safely tracks the load level and scaling status.
+type Status struct {
 	loadLevel int
 	sync.Mutex
 }
 
-func (s *scalingStatus) Reset() {
+// Reset resets the load level.
+func (s *Status) Reset() {
 	s.Lock()
 	defer s.Unlock()
 	s.loadLevel = 0
 }
 
-func (s *scalingStatus) Get() int {
+// Get returns the load level.
+func (s *Status) Get() int {
 	s.Lock()
 	defer s.Unlock()
 	return s.loadLevel
@@ -41,7 +45,7 @@ func (s *scalingStatus) Get() int {
 // * the pending size is above 80% of the capacity AND
 // * the batch size is below 80% of the capacity
 //
-func (s *scalingStatus) UpdateLoadLevel(batchSize, pendingSize, capacity int) {
+func (s *Status) UpdateLoadLevel(batchSize, pendingSize, capacity int) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -53,15 +57,15 @@ func (s *scalingStatus) UpdateLoadLevel(batchSize, pendingSize, capacity int) {
 
 	switch {
 	case outgoing < cap:
-		// The workers are not able to fill the batches. This can two causes.
+		// The workers are not able to fill the batches. This can be caused two causes.
 		switch {
 		case incoming < cap20:
 			// 1. There are just not enough incoming messages.
 			s.loadLevel--
 		default:
 			// 2. There are enough incoming messages. But we cannot tell if more workers would
-			//    help or harm, since  we do not know if we hit the CPU bounds.
-			// TODO: check CPU load here? It this possible?
+			//    help or harm, since we do not know if we hit the CPU bounds.
+			// TODO: Check CPU load here?
 		}
 	case outgoing == cap:
 		// The batches are full, more workers could help.
@@ -69,18 +73,17 @@ func (s *scalingStatus) UpdateLoadLevel(batchSize, pendingSize, capacity int) {
 	}
 }
 
-// autoscale starts and stops workers according to the configured `ins.cfg.MinWorkers`,
+// Autoscale starts and stops workers according to the configured `ins.cfg.MinWorkers`,
 // `ins.cfg.MaxWorkers`, and the current `ins.scaling.loadLevel`.
 // The workers will increase the load level when the batch size hits the capacity and will decrease
 // the load level when the batch size is below the capacity.
 //
 // Autoscaling can be enabled by setting `BatcherConfig.AutoScale = true`.
-// See [SCALING.md](SCALING.md) to check when to use auto scaling.
+// See [SCALING.md](../SCALING.md) to check when to use auto scaling.
 //
-func (ins *InsertBatcher) autoscale(ctx context.Context) {
+func Autoscale(ctx context.Context, cfg *config.BatcherConfig, status *Status, worker func(ctx context.Context, num int)) {
 	var wg sync.WaitGroup
 
-	cfg := ins.cfg
 	hooks := make(map[context.Context]func())
 	mu := &sync.Mutex{}
 
@@ -99,7 +102,7 @@ func (ins *InsertBatcher) autoscale(ctx context.Context) {
 		go func() {
 			defer wg.Done()
 
-			ins.worker(wctx, workerNum)
+			worker(wctx, workerNum)
 
 			mu.Lock()
 			delete(hooks, wctx)
@@ -126,7 +129,7 @@ func (ins *InsertBatcher) autoscale(ctx context.Context) {
 
 	// start worker scaling
 	var (
-		obs     = DefaultScaleObservations
+		obs     = config.DefaultScaleObservations
 		dur     = cfg.ScaleInterval
 		secs    = dur / time.Second
 		tick    = time.NewTicker(dur)
@@ -146,13 +149,13 @@ func (ins *InsertBatcher) autoscale(ctx context.Context) {
 		)
 		for {
 			<-tick.C
-			if ins.scaling.Get() > highObs {
+			if status.Get() > highObs {
 				addWorker()
-				ins.scaling.Reset()
+				status.Reset()
 			}
-			if ins.scaling.Get() < -lowObs {
+			if status.Get() < -lowObs {
 				rmWorker()
-				ins.scaling.Reset()
+				status.Reset()
 			}
 		}
 	}()

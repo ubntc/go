@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"sync"
+
+	"github.com/ubntc/go/batching/batbq/config"
+	"github.com/ubntc/go/batching/batbq/scaling"
 )
 
 // ID defines a specific batch pipeline.
@@ -17,23 +20,19 @@ type Putter interface {
 // InsertBatcher implements automatic batching with a batch capacity and flushInterval.
 type InsertBatcher struct {
 	id      ID
-	cfg     BatcherConfig
+	cfg     config.BatcherConfig
 	metrics *Metrics
 	input   <-chan Message
 	output  Putter
-	scaling scalingStatus
+	scaling scaling.Status
 	mu      *sync.Mutex
 }
 
-type batcherOption interface {
-	Apply(*InsertBatcher)
-}
-
 // NewInsertBatcher returns an InsertBatcher.
-func NewInsertBatcher(id ID, opt ...batcherOption) *InsertBatcher {
+func NewInsertBatcher(id ID, opt ...BatcherOption) *InsertBatcher {
 	ins := &InsertBatcher{
 		id:  id,
-		cfg: BatcherConfig{}.WithDefaults(),
+		cfg: config.BatcherConfig{}.WithDefaults(),
 		mu:  &sync.Mutex{},
 	}
 	for _, o := range opt {
@@ -65,7 +64,7 @@ func (ins *InsertBatcher) Process(ctx context.Context, input <-chan Message, out
 	ins.output = output
 
 	if ins.cfg.AutoScale {
-		ins.autoscale(ctx)
+		scaling.Autoscale(ctx, &ins.cfg, &ins.scaling, ins.worker)
 		return nil
 	}
 

@@ -1,4 +1,4 @@
-package batbq_test
+package multibatcher_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/ubntc/go/batching/batbq"
 	dummy "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
+	mb "github.com/ubntc/go/batching/batbq/multibatcher"
 )
 
 func dummyData(topic batbq.ID, size int) []dummy.Message {
@@ -37,7 +38,7 @@ func TestMultiBatcher(t *testing.T) {
 	// Example MultiBatcher Setup
 	// ==========================
 	// 1. Create a batcher with topic/table names.
-	mb := batbq.NewMultiBatcher(
+	mb := mb.NewMultiBatcher(
 		[]string{"p1", "p2"},
 	)
 
