@@ -11,6 +11,7 @@ import (
 	"cloud.google.com/go/bigquery"
 	"cloud.google.com/go/pubsub"
 	"github.com/ubntc/go/batching/batbq"
+	"github.com/ubntc/go/metrics"
 
 	clicks "github.com/ubntc/go/batching/batbq/_examples/ps2bq/clicks"
 	"github.com/ubntc/go/batching/batbq/patcher"
@@ -119,7 +120,7 @@ func main() {
 	batcher := batbq.NewInsertBatcher("clicks", cfg)
 
 	if *stats {
-		batcher.Metrics().Watch(ctx)
+		metrics.Watch(ctx, batcher.Metrics())
 	}
 
 	if *dry {

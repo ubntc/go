@@ -20,6 +20,7 @@ type BatchedSubscription struct {
 	Receiver
 	capacity      int
 	flushInterval time.Duration
+	metrics       Metrics
 }
 
 // NewBatchedSubscription returns an initalized BatNewBatchedSubscription.
@@ -73,15 +74,20 @@ func (sub *BatchedSubscription) ReceiveBatches(ctx context.Context, f BatchFunc)
 			if len(batch) == 0 {
 				return
 			}
-			f(ctx, batch)
+			wg.Add(1) // ensure we wait for pending flushes
+			go func(batch []*pubsub.Message) {
+				defer wg.Done()
+				f(ctx, batch)
+			}(batch)
 			batch = make([]*pubsub.Message, 0, sub.capacity)
 		}
 		defer flush()
 
-		tick := time.Tick(sub.flushInterval)
+		tick := time.NewTicker(sub.flushInterval)
+		defer tick.Stop()
 		for {
 			select {
-			case <-tick:
+			case <-tick.C:
 				flush()
 			case msg, more := <-ch:
 				if !more {
@@ -97,8 +103,8 @@ func (sub *BatchedSubscription) ReceiveBatches(ctx context.Context, f BatchFunc)
 
 	// this will block until the receiver stopped
 	err := sub.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) { ch <- msg })
-	close(ch)
-	wg.Wait()
+	close(ch) // close the channel to let stop the batching goroutine
+	wg.Wait() // but  wait for pending flushes
 
 	if err != nil {
 		return fmt.Errorf("ReceiveBatch: %v", err)

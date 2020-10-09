@@ -54,15 +54,7 @@ func (ins *InsertBatcher) worker(ctx context.Context, num int) {
 	}
 
 	flush := func() {
-		switch len(batch) {
-		case 0:
-			ins.scaling.Dec()
-			return
-		case cfg.Capacity:
-			ins.scaling.Inc()
-		default:
-			ins.scaling.Dec()
-		}
+		ins.scaling.UpdateLoadLevel(len(batch), len(input), cfg.Capacity)
 
 		msgCount.Add(float64(len(batch)))
 

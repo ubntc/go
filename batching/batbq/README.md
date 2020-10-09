@@ -1,6 +1,6 @@
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4)](https://pkg.go.dev/mod/github.com/ubntc/go/batching/batbq)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ubntc/go/batcher/batbq)](https://goreportcard.com/report/github.com/ubntc/go/batcher/batbq)
-[![cover-badge](https://img.shields.io/badge/coverage-66%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
+[![cover-badge](https://img.shields.io/badge/coverage-72%25-brightgreen.svg?longCache=true&style=flat)](Makefile#10)
 
 # Batched BigQuery Inserter
 

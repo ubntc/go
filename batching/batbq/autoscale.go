@@ -14,18 +14,6 @@ type scalingStatus struct {
 	sync.Mutex
 }
 
-func (s *scalingStatus) Inc() {
-	s.Lock()
-	defer s.Unlock()
-	s.loadLevel++
-}
-
-func (s *scalingStatus) Dec() {
-	s.Lock()
-	defer s.Unlock()
-	s.loadLevel--
-}
-
 func (s *scalingStatus) Reset() {
 	s.Lock()
 	defer s.Unlock()
@@ -38,8 +26,57 @@ func (s *scalingStatus) Get() int {
 	return s.loadLevel
 }
 
-// autoscale start and stops workers according to number of `ins.cfg.MinWorkers`,
-// `ins.cfg.MaxWorkerFactor`, and the number of queued messages on the `input` channel.
+// UpdateLoadLevel updates the load level based on the observed last batch size compared to the
+// configured capacity and the observed number of pending messages compared to the capacity.
+//
+// The load is considered as high if:
+// * the batch size hits the capacity OR
+// * the pending size is above 80% of the capacity
+//
+// The load is considered as low if:
+// * the batch size is below the capacity AND
+// * the pending size is below 20% of the capacity
+//
+// The system is considered as overloaded, with more workers being harmful, if:
+// * the pending size is above 80% of the capacity AND
+// * the batch size is below 80% of the capacity
+//
+func (s *scalingStatus) UpdateLoadLevel(batchSize, pendingSize, capacity int) {
+	s.Lock()
+	defer s.Unlock()
+
+	outgoing := float64(batchSize)
+	incoming := float64(pendingSize)
+	cap := float64(capacity)
+	// cap80 := cap * 0.8
+	cap20 := cap * 0.2
+
+	switch {
+	case outgoing < cap:
+		// The workers are not able to fill the batches. This can two causes.
+		switch {
+		case incoming < cap20:
+			// 1. There are just not enough incoming messages.
+			s.loadLevel--
+		default:
+			// 2. There are enough incoming messages. But we cannot tell if more workers would
+			//    help or harm, since  we do not know if we hit the CPU bounds.
+			// TODO: check CPU load here? It this possible?
+		}
+	case outgoing == cap:
+		// The batches are full, more workers could help.
+		s.loadLevel++
+	}
+}
+
+// autoscale starts and stops workers according to the configured `ins.cfg.MinWorkers`,
+// `ins.cfg.MaxWorkers`, and the current `ins.scaling.loadLevel`.
+// The workers will increase the load level when the batch size hits the capacity and will decrease
+// the load level when the batch size is below the capacity.
+//
+// Autoscaling can be enabled by setting `BatcherConfig.AutoScale = true`.
+// See [SCALING.md](SCALING.md) to check when to use auto scaling.
+//
 func (ins *InsertBatcher) autoscale(ctx context.Context) {
 	var wg sync.WaitGroup
 

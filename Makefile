@@ -2,7 +2,7 @@
 
 .PHONY: help debug test cover make tag refresh
 
-PACKAGES = errchan cli playground batching/batsub batching/batbq
+PACKAGES = errchan cli playground batching/batsub batching/batbq metrics
 TARGETS  = cli batching/batsub batching/batbq
 
 help:
