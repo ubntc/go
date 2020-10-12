@@ -2,16 +2,21 @@ package batsub
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	"cloud.google.com/go/pubsub"
 )
 
-// Receiver defines a pubsub compatible `Receive` func.
+// DefaultFlushInterval defines the default time between forced flushes of incomplete batches.
+var DefaultFlushInterval = time.Second
+
+// Receiver defines pubsub.Subscription compatible interface with a `Receive` and `ID` method.
 type Receiver interface {
+	// Receive handles receiving messages from a subscription.
 	Receive(ctx context.Context, f func(context.Context, *pubsub.Message)) error
+	// ID returns an identifier for a subscription and is used for the metrics.
+	ID() string
 }
 
 // BatchedSubscription implements automatic batching
@@ -20,16 +25,22 @@ type BatchedSubscription struct {
 	Receiver
 	capacity      int
 	flushInterval time.Duration
-	metrics       Metrics
+	metrics       *Metrics
 }
 
 // NewBatchedSubscription returns an initalized BatNewBatchedSubscription.
-func NewBatchedSubscription(receiver Receiver, capacity int, flushInterval time.Duration) *BatchedSubscription {
-	return &BatchedSubscription{
-		Receiver:      receiver,
-		capacity:      capacity,
-		flushInterval: flushInterval,
+func NewBatchedSubscription(receiver Receiver, opt ...Option) *BatchedSubscription {
+	b := &BatchedSubscription{Receiver: receiver}
+	for _, o := range opt {
+		o.apply(b)
 	}
+	if b.metrics == nil {
+		b.metrics = NewMetrics()
+	}
+	if b.flushInterval == 0 {
+		b.flushInterval = DefaultFlushInterval
+	}
+	return b
 }
 
 // BatchFunc handles a batch of messages.
@@ -65,12 +76,21 @@ func (sub *BatchedSubscription) ReceiveBatches(ctx context.Context, f BatchFunc)
 	ch := make(chan *pubsub.Message, sub.capacity)
 	var wg sync.WaitGroup
 
+	var (
+		id        = sub.ID()
+		pending   = sub.metrics.PendingMessages.WithLabelValues(id)
+		processed = sub.metrics.ProcessedMessages.WithLabelValues(id)
+		flushed   = sub.metrics.ProcessedBatches.WithLabelValues(id)
+		latency   = sub.metrics.ProcessingLatency.WithLabelValues(id)
+	)
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
 		var batch []*pubsub.Message
 		flush := func() {
+			t := time.Now()
 			if len(batch) == 0 {
 				return
 			}
@@ -78,7 +98,12 @@ func (sub *BatchedSubscription) ReceiveBatches(ctx context.Context, f BatchFunc)
 			go func(batch []*pubsub.Message) {
 				defer wg.Done()
 				f(ctx, batch)
+				// track progress after batch is completed
+				latency.Observe(time.Now().Sub(t).Seconds())
+				flushed.Add(float64(len(batch)))
+				processed.Add(float64(len(batch)))
 			}(batch)
+
 			batch = make([]*pubsub.Message, 0, sub.capacity)
 		}
 		defer flush()
@@ -87,27 +112,36 @@ func (sub *BatchedSubscription) ReceiveBatches(ctx context.Context, f BatchFunc)
 		defer tick.Stop()
 		for {
 			select {
+
 			case <-tick.C:
 				flush()
 			case msg, more := <-ch:
+				// The batching can be stopped by closing the channel.
+				// No additional context handling is required.
 				if !more {
 					return
 				}
 				batch = append(batch, msg)
 				if len(batch) >= sub.capacity {
 					flush()
+					pending.Set(float64(len(ch)))
 				}
 			}
 		}
 	}()
 
-	// this will block until the receiver stopped
+	// The receiver will block until it is stopped via the external context.
+	// After it stopped, no more messages must be sent to the channel.
 	err := sub.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) { ch <- msg })
-	close(ch) // close the channel to let stop the batching goroutine
-	wg.Wait() // but  wait for pending flushes
+
+	// The channel can now be closed safely to stop the batching goroutine.
+	close(ch)
+
+	// Wait until all pending messages are flushed and all pending flushes are completed.
+	wg.Wait()
 
 	if err != nil {
-		return fmt.Errorf("ReceiveBatch: %v", err)
+		return err
 	}
 
 	return nil

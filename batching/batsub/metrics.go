@@ -8,7 +8,7 @@ import (
 
 // metrics labels
 const (
-	BATPS        = "batps"
+	BATSUB       = "batsub"
 	SUBSCRIPTION = "subscription"
 )
 
@@ -25,33 +25,34 @@ type Metrics struct {
 	ProcessingLatency *prometheus.HistogramVec
 }
 
-func newMetrics(prefix ...string) *Metrics {
+// NewMetrics returns prefixed metrics.
+func NewMetrics(prefix ...string) *Metrics {
 	ns := strings.Join(prefix, "_")
+	if len(ns) == 0 {
+		ns = BATSUB
+	}
 	label := []string{SUBSCRIPTION}
 	return &Metrics{
 		// State
 		PendingMessages: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name:      "pending_messages",
 			Namespace: ns,
-			Subsystem: BATPS,
 		}, label),
+
 		// Results
 		ProcessedMessages: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name:      "processed_messages_total",
 			Namespace: ns,
-			Subsystem: BATPS,
 		}, label),
 		ProcessedBatches: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name:      "processed_batches_total",
 			Namespace: ns,
-			Subsystem: BATPS,
 		}, label),
 
 		// Latencies
 		ProcessingLatency: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name:      "processing_latency_seconds",
 			Namespace: ns,
-			Subsystem: BATPS,
 		}, label),
 	}
 }

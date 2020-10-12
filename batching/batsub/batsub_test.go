@@ -18,7 +18,7 @@ type source struct {
 	done      chan struct{}
 }
 
-// Receive is a pubsub-like Receive function to acquire messages from the source.
+// Receive is a pubsub-like Receive function to receive messages from a data source.
 func (rec *source) Receive(ctx context.Context, f func(context.Context, *pubsub.Message)) error {
 	go func() {
 		for _, m := range rec.messages {
@@ -29,6 +29,10 @@ func (rec *source) Receive(ctx context.Context, f func(context.Context, *pubsub.
 	}()
 	<-rec.done
 	return nil
+}
+
+func (rec *source) ID() string {
+	return "test"
 }
 
 func TestBatchedSubscription(t *testing.T) {
@@ -49,51 +53,47 @@ func TestBatchedSubscription(t *testing.T) {
 		// special cases
 		"timeout":  {2, 10, time.Microsecond, time.Millisecond, 2, nil},
 		"zero len": {0, 10, time.Second, 0, 0, nil},
+		"zero dur": {10, 0, 0, 0, 10, nil}, // will use default duration
 		"zero cap": {10, 0, time.Second, 0, 10, nil},
 		// NOTE: A zero capacity case is valid since Go's `append` will add missing slice capacity
 		//       and the feeding of the slice will be done using a zero capacity (blocking) channel.
+
 	}
 
-	var wg sync.WaitGroup
-	for name, spec := range cases {
-		wg.Add(1)
-		go func(name string, spec Spec) {
-			t.Run(name, func(t *testing.T) {
-				defer wg.Done()
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
+	for name := range cases {
+		name := name
+		t.Run(name, func(t *testing.T) {
+			spec := cases[name]
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-				data := make([]*pubsub.Message, 0, spec.len)
-				for i := 0; i < spec.len; i++ {
-					data = append(data, &pubsub.Message{ID: fmt.Sprint(i)})
-				}
-				assert.Len(t, data, spec.len)
+			data := make([]*pubsub.Message, 0, spec.len)
+			for i := 0; i < spec.len; i++ {
+				data = append(data, &pubsub.Message{ID: fmt.Sprint(i)})
+			}
+			assert.Len(t, data, spec.len)
 
-				rec := &source{
-					messages:  data,
-					done:      make(chan struct{}),
-					sendDelay: spec.sendDelay,
-				}
-				sub := batsub.NewBatchedSubscription(rec, spec.cap, spec.dur)
+			rec := &source{
+				messages:  data,
+				done:      make(chan struct{}),
+				sendDelay: spec.sendDelay,
+			}
+			sub := batsub.NewBatchedSubscription(rec, batsub.Capacity(spec.cap), batsub.FlushInterval(spec.dur))
 
-				var mu sync.Mutex
-				var result []*pubsub.Message
-				var numBatches = 0
-				receive := func(ctx context.Context, messages []*pubsub.Message) {
-					mu.Lock()
-					defer mu.Unlock()
-					numBatches++
-					result = append(result, messages...)
-				}
+			var mu sync.Mutex
+			var result []*pubsub.Message
+			var numBatches = 0
+			receive := func(ctx context.Context, messages []*pubsub.Message) {
+				mu.Lock()
+				defer mu.Unlock()
+				numBatches++
+				result = append(result, messages...)
+			}
 
-				err := sub.ReceiveBatches(ctx, receive)
-				assert.NoError(t, err)
-				assert.Len(t, result, spec.len)
-				assert.Equal(t, spec.expBatches, numBatches)
-			})
-		}(name, spec)
+			err := sub.ReceiveBatches(ctx, receive)
+			assert.NoError(t, err)
+			assert.Len(t, result, spec.len)
+			assert.Equal(t, spec.expBatches, numBatches)
+		})
 	}
-
-	wg.Wait()
-
 }
