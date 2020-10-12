@@ -9,9 +9,9 @@ Reading from the input channel into the current batch is done in one goroutine t
 This can be a bottleneck and may require using more than one worker to read from the same channel.
 
 If `BatcherConfig.AutoScale` is `true` the batcher will concurrently run more workers based on the
-observed batch load and the [configured](config.go) `MinWorkers` and `MaxWorkers`.
+observed batch load and the [configured](config/config.go) `MinWorkers` and `MaxWorkers`.
 
-Using multiple workers, results in more batches being collected and sent concurrently via
+Using multiple workers may result in more batches being collected and sent concurrently via
 `output.Put(ctx, batch)`. However, all workers share the same `input <-chan batbq.Message` and the
 same `output Putter`. Both, data source and output, must be concurrency-safe by supporting
 concurrent calls of `Ack()`, `Nack(error)`, and `Put(ctx, batch)`.
@@ -29,7 +29,7 @@ You can play with the PubSub [publisher](_examples/publisher/main.go) and the
    values to see the effects of the chosen batch size on the worker scaling and CPU usage.
 
 
-## Test Results: 1000 msg/sdetails
+## Test Results: 1000 msg/s
 Tests on a regular 4 core Linux laptop with a 100Mbit/s internet connection, using `MaxWorkers = 10`
 and `MaxOutstandingMessages = 10000`, provided the following observations.
 

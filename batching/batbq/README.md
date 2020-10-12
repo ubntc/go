@@ -17,6 +17,7 @@ Batbq package implements batching of messages for the `bigquery.Inserter` and pr
 
 ## Usage
 
+<!--include: _examples/simple/main.go-->
 ```golang
 package main
 
@@ -29,7 +30,6 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"github.com/ubntc/go/batching/batbq"
-	"github.com/ubntc/go/batching/batbq/config"
 
 	custom "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
 )
@@ -63,15 +63,15 @@ func main() {
 
 	ctx := context.Background()
 	client, _ := bigquery.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
-	output := client.Dataset("tmp").Table("batbq").Inserter()
+	output := client.Dataset("tmp").Table("batbq_test").Inserter()
 
-	cfg := config.BatcherConfig{
-		Capacity:      100,
+	cfg := batbq.Config{
+		Capacity:      1000,
 		FlushInterval: time.Second,
 	}
 
 	input := make(chan batbq.Message, cfg.Capacity)
-	batcher := batbq.NewInsertBatcher("custom_message", batbq.WithConfig(cfg))
+	batcher := batbq.NewInsertBatcher("batbq_test", cfg)
 
 	go func() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })
@@ -80,7 +80,9 @@ func main() {
 
 	batcher.Process(ctx, input, output)
 }
+
 ```
+<!--/-->
 
 Also see the [PubSub to BigQuery](_examples/ps2bq/main.go) example.
 

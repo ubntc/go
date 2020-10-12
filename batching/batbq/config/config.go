@@ -26,7 +26,7 @@ type BatcherConfig struct {
 	WorkerConfig
 }
 
-// WithDefaults loads defaults values for unset values and returns the merged config.
+// WithDefaults copies the config by value, sets missing defaults values returns the copy.
 func (cfg BatcherConfig) WithDefaults() BatcherConfig {
 	if cfg.FlushInterval <= 0 {
 		cfg.FlushInterval = DefaultFlushInterval
@@ -45,4 +45,10 @@ func (cfg BatcherConfig) WithDefaults() BatcherConfig {
 		cfg.MinWorkers = 1
 	}
 	return cfg
+}
+
+// Default returns a new default config.
+func Default() BatcherConfig {
+	cfg := BatcherConfig{}
+	return cfg.WithDefaults()
 }

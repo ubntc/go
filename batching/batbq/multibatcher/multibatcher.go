@@ -11,7 +11,7 @@ import (
 
 // MultiBatcher streams data to multiple outputs.
 type MultiBatcher struct {
-	ids  []batbq.ID
+	ids  []string
 	opts []batbq.BatcherOption
 }
 
@@ -19,20 +19,20 @@ type MultiBatcher struct {
 func NewMultiBatcher(ids []string, opts ...batbq.BatcherOption) *MultiBatcher {
 	mib := &MultiBatcher{opts: opts}
 	for _, id := range ids {
-		mib.ids = append(mib.ids, batbq.ID(id))
+		mib.ids = append(mib.ids, id)
 	}
 	return mib
 }
 
 // InputGetter returns an input channel for a given batcher ID.
-type InputGetter func(id batbq.ID) <-chan batbq.Message
+type InputGetter func(id string) <-chan batbq.Message
 
 // OutputGetter returns a Putter for a given batcher ID.
-type OutputGetter func(id batbq.ID) batbq.Putter
+type OutputGetter func(id string) batbq.Putter
 
 // Process starts the batchers.
 func (mb *MultiBatcher) Process(ctx context.Context, input InputGetter, output OutputGetter) <-chan error {
-	batchers := make(map[batbq.ID]*batbq.InsertBatcher)
+	batchers := make(map[string]*batbq.InsertBatcher)
 
 	errchan := make(chan error, len(mb.ids))
 	var wg sync.WaitGroup
@@ -40,7 +40,7 @@ func (mb *MultiBatcher) Process(ctx context.Context, input InputGetter, output O
 		ins := batbq.NewInsertBatcher(id, mb.opts...)
 		batchers[id] = ins
 		wg.Add(1)
-		go func(id batbq.ID) {
+		go func(id string) {
 			defer wg.Done()
 			in := input(id)
 			out := output(id)

@@ -46,30 +46,49 @@ func (s *Status) Get() int {
 // * the batch size is below 80% of the capacity
 //
 func (s *Status) UpdateLoadLevel(batchSize, pendingSize, capacity int) {
+	if s == nil {
+		// allow running with empty Status
+		return
+	}
+
 	s.Lock()
 	defer s.Unlock()
 
 	outgoing := float64(batchSize)
 	incoming := float64(pendingSize)
 	cap := float64(capacity)
-	// cap80 := cap * 0.8
+	cap80 := cap * 0.8
+	// cap50 := cap * 0.5
 	cap20 := cap * 0.2
 
+	// ATTENTION: In general, one cannot tell if more workers would help or harm,
+	//            since we do not know if we hit the CPU bounds.
+
 	switch {
-	case outgoing < cap:
-		// The workers are not able to fill the batches. This can be caused two causes.
+	case outgoing < cap80:
+		// The workers are not able to fill the batches, which can have two causes:
 		switch {
 		case incoming < cap20:
-			// 1. There are just not enough incoming messages.
+			// There are not enough incoming messages.
 			s.loadLevel--
-		default:
-			// 2. There are enough incoming messages. But we cannot tell if more workers would
-			//    help or harm, since we do not know if we hit the CPU bounds.
-			// TODO: Check CPU load here?
+		case incoming > cap80:
+			// There are too many incoming messages.
+			s.loadLevel++ //  TODO: Check CPU load here! (assume overload for now)
 		}
-	case outgoing == cap:
-		// The batches are full, more workers could help.
-		s.loadLevel++
+	case outgoing > cap80:
+		// The batches are very full, which can have two causes:
+		switch {
+		case incoming > cap80:
+			// There are too many incoming messages.
+			s.loadLevel++
+		case incoming < cap20:
+			// There are not enough incoming messages.
+			// keep load level, since batches are well filled
+		}
+	}
+
+	if s.loadLevel < 0 {
+		s.loadLevel = 0
 	}
 }
 
@@ -157,6 +176,7 @@ func Autoscale(ctx context.Context, cfg *config.BatcherConfig, status *Status, w
 				rmWorker()
 				status.Reset()
 			}
+			log.Print("load level:", status.Get(), highObs, lowObs)
 		}
 	}()
 

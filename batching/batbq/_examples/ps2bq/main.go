@@ -118,7 +118,7 @@ func main() {
 	sub := psClient.Subscription(*topic + *subfix)
 	sub.ReceiveSettings.MaxOutstandingMessages = 10000
 
-	batcher := batbq.NewInsertBatcher("clicks", batbq.WithConfig(cfg))
+	batcher := batbq.NewInsertBatcher("clicks", batbq.Config(cfg))
 
 	if *stats {
 		metrics.Watch(ctx, batcher.Metrics())

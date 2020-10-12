@@ -60,14 +60,16 @@ func testRun(t *testing.T, spec testSpec) *testResults {
 		WriteDelay: spec.timing.writeDelay,
 	}
 
-	batcher := batbq.NewInsertBatcher("test", &batbq.WithConfig{
+	cfg := config.BatcherConfig{
 		Capacity:      spec.cap,
 		FlushInterval: spec.timing.dur,
 		WorkerConfig: config.WorkerConfig{
 			ScaleInterval: spec.timing.scaleInterval,
 			AutoScale:     spec.timing.autoScale,
 		},
-	})
+	}.WithDefaults()
+
+	batcher := batbq.NewInsertBatcher("test", batbq.Config(cfg))
 	batcher.Process(ctx, input, output)
 
 	return &testResults{
@@ -114,10 +116,10 @@ func TestWorkerScaling(t *testing.T) {
 	// assert.GreaterOrEqual(t, res.MaxWorkers, 2, "at least one extra worker must have started")
 }
 
-var testConfig = batbq.WithConfig{Capacity: 10, FlushInterval: 10 * time.Millisecond}
+var testConfig = config.BatcherConfig{Capacity: 10, FlushInterval: 10 * time.Millisecond}
 
 func TestHandleInsertErrors(t *testing.T) {
-	ins := batbq.NewInsertBatcher("test", testConfig)
+	ins := batbq.NewInsertBatcher("test", batbq.Config(testConfig))
 	src := dummy.Source{
 		Messages: []dummy.Message{
 			{ID: "err1"},
@@ -132,7 +134,7 @@ func TestHandleInsertErrors(t *testing.T) {
 }
 
 func TestHandleError(t *testing.T) {
-	ins := batbq.NewInsertBatcher("test", testConfig)
+	ins := batbq.NewInsertBatcher("test", batbq.Config(testConfig))
 	src := dummy.Source{
 		Messages: []dummy.Message{
 			{ID: "fatal"},
@@ -148,7 +150,7 @@ func TestHandleError(t *testing.T) {
 }
 
 func TestBatcherWithMetrics(t *testing.T) {
-	ins := batbq.NewInsertBatcher("test", &batbq.WithMetrics{})
+	ins := batbq.NewInsertBatcher("test", batbq.NewMetrics())
 	assert.NotNil(t, ins.Metrics())
 }
 

@@ -177,7 +177,7 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd0=
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/ubntc/go v0.0.0-20201009151316-2cfa94286a53 h1:JUqjQ8C1M8AKjLW7YCkOKar1CryWdNMKhMgs4a/7690=
+github.com/ubntc/go v0.0.0-20201012083008-f5ee0acc95f2 h1:tq9VBN90a2h/Oq8fX1a473D+rbkXxhju6sfR2KbRbX4=
 github.com/ubntc/go/metrics v0.0.1 h1:FB+1jqLkhXa/X1R8cVOGxRtbvbdlGpfpl6MKj1ITy0I=
 github.com/ubntc/go/metrics v0.0.1/go.mod h1:CRuS/0RMO7cmCXp0jvJKsklHWK2ReDpqzLOBXra2u/0=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

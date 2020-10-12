@@ -13,7 +13,7 @@ func confirmMessages(messages []Message, err error) (numAcked int, numNacked int
 
 	switch {
 	case len(nacked) == len(messages):
-		// all messages had errors were nacked
+		// all messages had errors and are already nacked
 	case len(nacked) == 0:
 		// no messages had errors and can be acked
 		for _, m := range messages {
@@ -46,15 +46,16 @@ func handleErrors(messages []Message, err error) (index map[int]struct{}) {
 			nacked[insErr.RowIndex] = struct{}{}
 		}
 	case err == context.Canceled:
-		// during shutdown, just nack the messages without forwarding the error
+		// batcher is shutdown down, just nack the messages without forwarding the error
 		for i, m := range messages {
-			nacked[i] = struct{}{}
 			m.Nack(nil)
+			nacked[i] = struct{}{}
 		}
 	case err != nil:
+		// another error happened, forward it with the Nack to allow handling upstream
 		for i, m := range messages {
-			nacked[i] = struct{}{}
 			m.Nack(err)
+			nacked[i] = struct{}{}
 		}
 	}
 	return nacked

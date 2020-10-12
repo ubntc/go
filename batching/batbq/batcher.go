@@ -9,9 +9,6 @@ import (
 	"github.com/ubntc/go/batching/batbq/scaling"
 )
 
-// ID defines a specific batch pipeline.
-type ID string
-
 // Putter provides a `Put` func as used by the `bigquery.Inserter`.
 type Putter interface {
 	Put(ctx context.Context, src interface{}) error
@@ -19,7 +16,7 @@ type Putter interface {
 
 // InsertBatcher implements automatic batching with a batch capacity and flushInterval.
 type InsertBatcher struct {
-	id      ID
+	id      string
 	cfg     config.BatcherConfig
 	metrics *Metrics
 	input   <-chan Message
@@ -29,17 +26,17 @@ type InsertBatcher struct {
 }
 
 // NewInsertBatcher returns an InsertBatcher.
-func NewInsertBatcher(id ID, opt ...BatcherOption) *InsertBatcher {
+func NewInsertBatcher(id string, opt ...BatcherOption) *InsertBatcher {
 	ins := &InsertBatcher{
 		id:  id,
-		cfg: config.BatcherConfig{}.WithDefaults(),
+		cfg: config.Default(),
 		mu:  &sync.Mutex{},
 	}
 	for _, o := range opt {
-		o.Apply(ins)
+		o.apply(ins)
 	}
 	if ins.metrics == nil {
-		ins.metrics = newMetrics()
+		ins.metrics = NewMetrics()
 	}
 	return ins
 }

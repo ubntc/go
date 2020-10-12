@@ -6,7 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// metrics labels
+// metrics prefix and label
 const (
 	BATSUB       = "batsub"
 	SUBSCRIPTION = "subscription"

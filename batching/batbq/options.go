@@ -4,23 +4,17 @@ import "github.com/ubntc/go/batching/batbq/config"
 
 // BatcherOption configures the batcher.
 type BatcherOption interface {
-	Apply(*InsertBatcher)
+	apply(*InsertBatcher)
 }
 
-// WithConfig set config values.
-type WithConfig config.BatcherConfig
+// Config wraps a config.BatcherConfig to be used as BatcherOption.
+type Config config.BatcherConfig
 
-// Apply applies the config and sets defaults.
-func (cfg WithConfig) Apply(ins *InsertBatcher) {
+// apply applies the config and sets defaults.
+func (cfg Config) apply(ins *InsertBatcher) {
 	ins.cfg = config.BatcherConfig(cfg).WithDefaults()
 }
 
-// WithMetrics sets the batchers metrics.
-type WithMetrics struct {
-	*Metrics
-}
-
-// Apply applies the option.
-func (m *WithMetrics) Apply(ins *InsertBatcher) {
-	ins.metrics = m.Metrics
+func (m *Metrics) apply(ins *InsertBatcher) {
+	ins.metrics = m
 }

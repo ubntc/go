@@ -1,4 +1,5 @@
-// This file provides the content for the README.md it must
+// This file provides the content for main the README.md code section // nodoc+2
+// Keep it as simple as possible and add "// nodoc" comments to skip lines.
 
 package main
 
@@ -11,7 +12,6 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"github.com/ubntc/go/batching/batbq"
-	"github.com/ubntc/go/batching/batbq/config"
 
 	custom "github.com/ubntc/go/batching/batbq/_examples/simple/dummy"
 )
@@ -40,31 +40,32 @@ func (msg *Msg) Data() bigquery.ValueSaver {
 	return &bigquery.StructSaver{InsertID: msg.m.ID, Struct: msg.m, Schema: schema}
 }
 
-var dry = flag.Bool("dry", false, "setup pipeline but do not run the batcher")
-
 func main() {
+	var dry = flag.Bool("dry", false, "setup pipeline but do not run the batcher") // nodoc+2
 	flag.Parse()
+
 	source := custom.NewSource("src_name") // custom data source
 
 	ctx := context.Background()
 	client, _ := bigquery.NewClient(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
-	output := client.Dataset("tmp").Table("batbq").Inserter()
+	output := client.Dataset("tmp").Table("batbq_test").Inserter()
 
-	cfg := config.BatcherConfig{
-		Capacity:      100,
+	cfg := batbq.Config{
+		Capacity:      1000,
 		FlushInterval: time.Second,
 	}
 
 	input := make(chan batbq.Message, cfg.Capacity)
-	batcher := batbq.NewInsertBatcher("custom_message", batbq.WithConfig(cfg))
+	batcher := batbq.NewInsertBatcher("batbq_test", cfg)
 
 	go func() {
 		source.Receive(ctx, func(m *custom.Message) { input <- &Msg{m} })
 		close(input)
 	}()
 
-	if *dry {
+	if *dry { // nodoc+3
 		return
 	}
+
 	batcher.Process(ctx, input, output)
 }

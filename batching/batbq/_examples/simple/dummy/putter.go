@@ -3,6 +3,7 @@ package dummy
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,12 +32,22 @@ func (p *Putter) Put(ctx context.Context, src interface{}) error {
 	errors := make(bigquery.PutMultiError, 0)
 	for i, v := range rows {
 		row, insertID, err := v.Save()
-		if insertID == "fatal" {
-			p.FatalErr = fmt.Errorf("all inserts failed")
-			return p.FatalErr
+		if err == nil {
+			// simulate expected errors
+			if strings.HasPrefix(insertID, "fatal") {
+				p.FatalErr = fmt.Errorf(insertID)
+				return p.FatalErr
+			}
+			if strings.HasPrefix(insertID, "err") {
+				err = fmt.Errorf(insertID)
+			}
 		}
-		if len(insertID) >= 3 && insertID[:3] == "err" || err != nil {
-			errors = append(errors, bigquery.RowInsertionError{RowIndex: i, InsertID: insertID})
+		if err != nil {
+			errors = append(errors, bigquery.RowInsertionError{
+				RowIndex: i,
+				InsertID: insertID,
+				Errors:   bigquery.MultiError{err},
+			})
 			continue
 		}
 		p.Table = append(p.Table, row)

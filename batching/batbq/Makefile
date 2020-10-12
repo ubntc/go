@@ -1,5 +1,5 @@
-.PHONY: all test cover cover-check
-all: test cover
+.PHONY: all test cover cover-check example
+all: test cover example
 
 test:
 	go test -race -timeout 3s ./...
@@ -12,3 +12,6 @@ cover:
 
 cover-check: cover
 	go tool cover -html=.cache/cover.profile
+
+example:
+	go run ../../scripts/code_include.go README.md

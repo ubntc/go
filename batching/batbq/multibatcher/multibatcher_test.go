@@ -11,7 +11,7 @@ import (
 	mb "github.com/ubntc/go/batching/batbq/multibatcher"
 )
 
-func dummyData(topic batbq.ID, size int) []dummy.Message {
+func dummyData(topic string, size int) []dummy.Message {
 	res := make([]dummy.Message, size)
 	for i := 0; i < size; i++ {
 		res[i] = dummy.Message{ID: string(topic) + "_msg_" + fmt.Sprint(i), Val: i}
@@ -20,14 +20,14 @@ func dummyData(topic batbq.ID, size int) []dummy.Message {
 }
 
 // GetInput demonstrates how to implement an InputGetter.
-func GetInput(id batbq.ID) <-chan batbq.Message {
+func GetInput(id string) <-chan batbq.Message {
 	src := dummy.NewSource(string(id))
 	src.Messages = dummyData(id, 10)
 	return src.Chan()
 }
 
 // GetInput demonstrates how to implement an OutputGetter.
-func GetOutput(id batbq.ID) batbq.Putter {
+func GetOutput(id string) batbq.Putter {
 	p := &dummy.Putter{Name: string(id)}
 	return p
 }
@@ -46,7 +46,7 @@ func TestMultiBatcher(t *testing.T) {
 	getInput := GetInput
 
 	// 3. Implement an OutputGetter that returns an output `batbq.Putter`.
-	getOutput := func(id batbq.ID) batbq.Putter {
+	getOutput := func(id string) batbq.Putter {
 		p := GetOutput(id)
 		testPutters <- p.(*dummy.Putter)
 		return p
