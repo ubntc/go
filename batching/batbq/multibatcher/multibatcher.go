@@ -11,17 +11,31 @@ import (
 
 // MultiBatcher streams data to multiple outputs.
 type MultiBatcher struct {
-	ids  []string
-	opts []batbq.BatcherOption
+	ids     []string
+	opts    []batbq.BatcherOption
+	Metrics *batbq.Metrics
 }
 
 // NewMultiBatcher returns a new MultiInsertBatcher
 func NewMultiBatcher(ids []string, opts ...batbq.BatcherOption) *MultiBatcher {
-	mib := &MultiBatcher{opts: opts}
-	for _, id := range ids {
-		mib.ids = append(mib.ids, id)
+	mb := &MultiBatcher{ids: ids, opts: opts}
+
+	// find metrics option and assign it to the multibatcher
+	for _, opt := range opts {
+		switch opt.(type) {
+		case *batbq.Metrics:
+			mb.Metrics = opt.(*batbq.Metrics)
+		}
 	}
-	return mib
+
+	// add missing metrics here and as option for the batchers
+	if mb.Metrics == nil {
+		mb.Metrics = batbq.NewMetrics()
+		mb.opts = append(mb.opts, mb.Metrics)
+	}
+
+	copy(mb.ids, ids)
+	return mb
 }
 
 // InputGetter returns an input channel for a given batcher ID.

@@ -4,11 +4,10 @@ import "time"
 
 // BatcherConfig defaults.
 const (
-	DefaultScaleInterval     = 3 * time.Second // how often to trigger worker scaling
-	DefaultScaleObservations = 10              // num batches to be watched to determine load level
-	DefaultFlushInterval     = time.Second     // when to send partially filled batches
-	DefaultMinWorkers        = 1
-	DefaultMaxWorkers        = 10
+	DefaultScaleInterval = 3 * time.Second // how often to trigger worker scaling
+	DefaultFlushInterval = time.Second     // when to send partially filled batches
+	DefaultMinWorkers    = 1
+	DefaultMaxWorkers    = 10
 )
 
 // WorkerConfig defines how many workers to use.

@@ -8,7 +8,7 @@ require (
 	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/prometheus/client_golang v1.7.1
 	github.com/stretchr/testify v1.6.1
-	github.com/ubntc/go/metrics v0.0.1 // indirect
 	golang.org/x/tools v0.0.0-20200725200936-102e7d357031 // indirect
+	google.golang.org/api v0.29.0
 	google.golang.org/genproto v0.0.0-20200726014623-da3ae01ef02d // indirect
 )

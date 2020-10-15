@@ -2,13 +2,18 @@ package scaling
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/ubntc/go/batching/batbq/config"
 )
+
+// MaxLoadLevel defines the highest possible load level.
+const MaxLoadLevel = 10
+
+// MinLoadLevel defines the lowest possible load level.
+const MinLoadLevel = -10
 
 // Status safely tracks the load level and scaling status.
 type Status struct {
@@ -55,41 +60,63 @@ func (s *Status) UpdateLoadLevel(batchSize, pendingSize, capacity int) {
 	defer s.Unlock()
 
 	outgoing := float64(batchSize)
-	incoming := float64(pendingSize)
 	cap := float64(capacity)
-	cap80 := cap * 0.8
-	// cap50 := cap * 0.5
-	cap20 := cap * 0.2
+	cap50 := cap * 0.5
 
-	// ATTENTION: In general, one cannot tell if more workers would help or harm,
-	//            since we do not know if we hit the CPU bounds.
+	// log.Print("update load level", s.loadLevel, batchSize, pendingSize, capacity)
 
-	switch {
-	case outgoing < cap80:
-		// The workers are not able to fill the batches, which can have two causes:
-		switch {
-		case incoming < cap20:
-			// There are not enough incoming messages.
-			s.loadLevel--
-		case incoming > cap80:
-			// There are too many incoming messages.
-			s.loadLevel++ //  TODO: Check CPU load here! (assume overload for now)
+	// Naive Scaling
+	// =============
+	// 1. Assume that we get enough data and have the CPU to fill the batches up to the capacity.
+	// 2. Assume that continuously hitting the limit means that need we need to increase throughput.
+	// 3. Assume that more workers will help to fill and send batches concurrently.
+	if outgoing >= cap {
+		if s.loadLevel == MaxLoadLevel {
+			return
 		}
-	case outgoing > cap80:
-		// The batches are very full, which can have two causes:
-		switch {
-		case incoming > cap80:
-			// There are too many incoming messages.
-			s.loadLevel++
-		case incoming < cap20:
-			// There are not enough incoming messages.
-			// keep load level, since batches are well filled
-		}
+		s.loadLevel++
+		return
 	}
 
-	if s.loadLevel < 0 {
-		s.loadLevel = 0
+	if outgoing < cap50 {
+		if s.loadLevel == MinLoadLevel {
+			return
+		}
+		s.loadLevel--
+		return
 	}
+
+	/*
+		Failed experiment: Determine load from high or low capacity usage
+
+		incoming := float64(pendingSize)
+		cap80 := cap * 0.8
+		cap50 := cap * 0.5
+		cap20 := cap * 0.2
+
+		switch {
+		case outgoing < cap80:
+			// The workers are not able to fill the batches, which can have two causes:
+			switch {
+			case incoming < cap20:
+				// There are not enough incoming messages.
+				s.loadLevel--
+			case incoming > cap80:
+				// There are too many incoming messages.
+				s.loadLevel++ //  TODO: Check CPU load here! (assume overload for now)
+			}
+		case outgoing > cap80:
+			// The batches are very full, which can have two causes:
+			switch {
+			case incoming > cap80:
+				// There are too many incoming messages.
+				s.loadLevel++
+			case incoming < cap20:
+				// There are not enough incoming messages.
+				// keep load level, since batches are well filled
+			}
+		}
+	*/
 }
 
 // Autoscale starts and stops workers according to the configured `ins.cfg.MinWorkers`,
@@ -148,12 +175,11 @@ func Autoscale(ctx context.Context, cfg *config.BatcherConfig, status *Status, w
 
 	// start worker scaling
 	var (
-		obs     = config.DefaultScaleObservations
-		dur     = cfg.ScaleInterval
-		secs    = dur / time.Second
-		tick    = time.NewTicker(dur)
-		highObs = obs / 2 // scale up quickly
-		lowObs  = obs * 2 // scale down later
+		dur       = cfg.ScaleInterval
+		secs      = dur / time.Second
+		tick      = time.NewTicker(dur)
+		highLevel = MaxLoadLevel / 2 // scale up quickly
+		lowLevel  = MinLoadLevel     // scale down later
 	)
 
 	go func() {
@@ -161,22 +187,20 @@ func Autoscale(ctx context.Context, cfg *config.BatcherConfig, status *Status, w
 			log.Print("skipping to start capacity-based autoscaling for capacity <= 1")
 			return
 		}
-		log.Print(
-			"starting autoscaler:\n",
-			fmt.Sprintf("-> scaling up after %d continuous high load observations in %ds\n", highObs, secs),
-			fmt.Sprintf("-> scaling down after %d continuous low load observations in %ds\n", lowObs, secs),
+		log.Printf("scaling up/down every %ds if load level above %d or below %d",
+			secs, highLevel, lowLevel,
 		)
 		for {
 			<-tick.C
-			if status.Get() > highObs {
+			if status.Get() >= highLevel {
 				addWorker()
 				status.Reset()
 			}
-			if status.Get() < -lowObs {
+			if status.Get() <= lowLevel {
 				rmWorker()
 				status.Reset()
 			}
-			log.Print("load level:", status.Get(), highObs, lowObs)
+			// log.Print("load level:", status.Get(), highLevel, lowLevel)
 		}
 	}()
 

@@ -4,9 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net/http"
+	"time"
 
 	"cloud.google.com/go/bigquery"
+	"google.golang.org/api/googleapi"
 )
+
+// DefaultTableExpiration defines the expiration time for new tables.
+var DefaultTableExpiration = time.Hour * 24 * 14
 
 // FieldMap stores fields.
 type FieldMap map[string]*Field
@@ -67,12 +73,36 @@ func mergeSchema(a, b bigquery.Schema) (bigquery.Schema, bool) {
 	return fieldSchema(trg), updated
 }
 
-// Patch patches a table.
-func Patch(ctx context.Context, table *bigquery.Table, schema bigquery.Schema) error {
+// GetOrCreateTable creates a table.
+func GetOrCreateTable(ctx context.Context, table *bigquery.Table, schema bigquery.Schema) (*bigquery.TableMetadata, error) {
 	meta, err := table.Metadata(ctx)
+
+	if apiErr, ok := err.(*googleapi.Error); ok && apiErr.Code == http.StatusNotFound {
+		log.Printf("creating missing table: %s", table.TableID)
+		meta = &bigquery.TableMetadata{
+			Schema: schema,
+			TimePartitioning: &bigquery.TimePartitioning{
+				Type:       bigquery.DayPartitioningType,
+				Expiration: DefaultTableExpiration,
+			},
+		}
+		err = table.Create(ctx, meta)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return meta, err
+}
+
+// PatchTable patches a table or creates a new table if it does not exist.
+func PatchTable(ctx context.Context, table *bigquery.Table, schema bigquery.Schema) error {
+	meta, err := GetOrCreateTable(ctx, table, schema)
 	if err != nil {
 		return err
 	}
+
 	newSchema, updated := mergeSchema(schema, meta.Schema)
 	data, err := json.Marshal(newSchema)
 	if err != nil {

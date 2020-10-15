@@ -18,42 +18,66 @@ import (
 // clickPublisher is a simple dummy publisher for creating test clicks.
 type clickPublisher struct {
 	sync.Mutex
-	total      int
-	numWorkers int
-	topic      *pubsub.Topic
+	total        int
+	numWorkers   int
+	project      string
+	topic        string
+	sendInterval time.Duration
 }
 
 // Next generates a new message.
-func (p *clickPublisher) Next() ([]byte, error) {
+func (p *clickPublisher) Next(prefix string) ([]byte, error) {
 	p.Lock()
+	num := p.total
+	p.total++
+	p.Unlock()
+
 	c := clicks.Click{
-		ID:     fmt.Sprintf("click%d", p.total),
+		ID:     fmt.Sprintf("click_%s_%d", prefix, num),
 		Origin: "ps2bq-demo",
 		Time:   time.Now().UTC(),
 	}
-	p.total++
-	p.Unlock()
 	return json.Marshal(c)
 }
 
-// Publish sends the given message to PubSub.
-func (p *clickPublisher) Publish(ctx context.Context, data []byte) error {
-	_, err := p.topic.Publish(ctx, &pubsub.Message{Data: data}).Get(ctx)
-	return err
-}
-
 // Start starts the publisher.
-func (p *clickPublisher) Start(ctx context.Context, sendInterval time.Duration, workerNum int) {
+func (p *clickPublisher) Worker(ctx context.Context) {
 	p.Lock()
 	p.numWorkers++
+	workerNum := p.numWorkers
 	p.Unlock()
 
-	ticker := time.NewTicker(sendInterval)
+	psClient, err := pubsub.NewClient(ctx, p.project)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer psClient.Close()
+
+	prefix := fmt.Sprintf("pub_%d", workerNum)
+	psTopic := psClient.Topic(p.topic)
+	msgRate := float64(p.sendInterval) / float64(time.Second)
+
+	ticker := time.NewTicker(p.sendInterval)
 	logtick := time.NewTicker(time.Second)
-	start := time.Now()
 	defer ticker.Stop()
 	defer logtick.Stop()
-	log.Printf("starting worker (sendInterval=%.2fs)", float64(sendInterval)/float64(time.Second))
+
+	results := make(chan *pubsub.PublishResult, 100)
+	defer close(results)
+
+	go func() {
+		for res := range results {
+			if _, err := res.Get(ctx); err != nil {
+				log.Print(err)
+			}
+		}
+	}()
+
+	log.Printf("starting worker with ticker duration %.2fs and expected message rate %.2f)",
+		p.sendInterval.Seconds(), msgRate,
+	)
+
+	start := time.Now()
 	for {
 		select {
 		case <-ctx.Done():
@@ -67,17 +91,12 @@ func (p *clickPublisher) Start(ctx context.Context, sendInterval time.Duration, 
 			log.Printf("publisherStats(total=%d, mps=%.2f, workers=%d)", p.total, mps, p.numWorkers)
 			p.Unlock()
 		case <-ticker.C:
-			data, err := p.Next()
+			data, err := p.Next(prefix)
 			if err != nil {
 				log.Print(err)
 				return
 			}
-
-			err = p.Publish(ctx, data)
-			if err != nil {
-				log.Print(err)
-				return
-			}
+			results <- psTopic.Publish(ctx, &pubsub.Message{Data: data})
 		}
 	}
 }
@@ -86,23 +105,21 @@ func main() {
 	var (
 		project      = flag.String("p", os.Getenv("GOOGLE_CLOUD_PROJECT"), "Project ID")
 		topic        = flag.String("t", "clicks", "Subscription Name")
-		sendInterval = flag.Duration("d", time.Millisecond, "duration between test demo messages")
-		concurrency  = flag.Int("c", 100, "concurrency level")
+		sendInterval = flag.Duration("d", time.Millisecond, "duration between clicks")
+		concurrency  = flag.Int("c", 1, "concurrency level")
 	)
 	flag.Parse()
 
 	ctx := context.Background()
-	psClient, err := pubsub.NewClient(ctx, *project)
-	if err != nil {
-		log.Fatal(err)
+	dur := *sendInterval
+	pub := &clickPublisher{
+		topic:        *topic,
+		project:      *project,
+		sendInterval: dur,
 	}
-	defer psClient.Close()
-
-	pub := &clickPublisher{topic: psClient.Topic(*topic)}
-	dur := *sendInterval * time.Duration(*concurrency)
 
 	for i := 1; i <= *concurrency; i++ {
-		go pub.Start(ctx, dur, i)
+		go pub.Worker(ctx)
 	}
 	<-ctx.Done()
 }

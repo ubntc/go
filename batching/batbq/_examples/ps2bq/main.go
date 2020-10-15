@@ -15,6 +15,7 @@ import (
 
 	clicks "github.com/ubntc/go/batching/batbq/_examples/ps2bq/clicks"
 	"github.com/ubntc/go/batching/batbq/config"
+	"github.com/ubntc/go/batching/batbq/multibatcher"
 	"github.com/ubntc/go/batching/batbq/patcher"
 )
 
@@ -81,28 +82,19 @@ func receive(ctx context.Context, sub *pubsub.Subscription, input chan<- batbq.M
 
 func main() {
 	var (
-		project = flag.String("project", os.Getenv("GOOGLE_CLOUD_PROJECT"), "Project ID")
-		topic   = flag.String("topic", "clicks", "Subscription Name")
-		subfix  = flag.String("subfix", "", "subscription suffix")
-		ds      = flag.String("ds", "tmp", "Dataset Name")
-		table   = flag.String("table", "clicks", "Table Name")
-		dry     = flag.Bool("dry", false, "setup pipeline but do not run the batcher")
-		stats   = flag.Bool("stats", false, "print metrics on the console")
-		cap     = flag.Int("cap", 500, "batch capacity")
+		project     = flag.String("project", os.Getenv("GOOGLE_CLOUD_PROJECT"), "Project ID")
+		topic       = flag.String("topic", "clicks", "Subscription Name")
+		subfix      = flag.String("subfix", "", "subscription suffix")
+		ds          = flag.String("ds", "tmp", "Dataset Name")
+		table       = flag.String("table", "clicks", "Table Name")
+		dry         = flag.Bool("dry", false, "setup pipeline but do not run the batcher")
+		stats       = flag.Bool("stats", false, "print metrics on the console")
+		cap         = flag.Int("cap", 1000, "batch capacity")
+		concurrency = flag.Int("c", 1, "number of independent batchers")
 	)
 	flag.Parse()
 
-	// setup PubSub client
 	ctx := context.Background()
-	psClient, err := pubsub.NewClient(ctx, *project)
-	exitOnErr(err)
-	defer psClient.Close()
-
-	// setup BigQuery client
-	bqClient, err := bigquery.NewClient(ctx, *project)
-	exitOnErr(err)
-	defer bqClient.Close()
-
 	cfg := config.BatcherConfig{
 		Capacity:      *cap,
 		FlushInterval: time.Second,
@@ -111,28 +103,50 @@ func main() {
 		},
 	}.WithDefaults()
 
-	tab := bqClient.Dataset(*ds).Table(*table)
-	input := make(chan batbq.Message, cfg.Capacity)
-	output := tab.Inserter()
+	getInput := func(id string) <-chan batbq.Message {
+		c, err := pubsub.NewClient(ctx, *project)
+		exitOnErr(err)
+		input := make(chan batbq.Message, cfg.Capacity)
+		sub := c.Subscription(*topic + *subfix)
+		sub.ReceiveSettings.MaxOutstandingMessages = 10000
+		sub.ReceiveSettings.NumGoroutines = 10
+		go func() {
+			defer close(input)
+			exitOnErr(receive(ctx, sub, input))
+		}()
+		return input
+	}
 
-	sub := psClient.Subscription(*topic + *subfix)
-	sub.ReceiveSettings.MaxOutstandingMessages = 10000
+	getOutput := func(id string) batbq.Putter {
+		c, err := bigquery.NewClient(ctx, *project)
+		exitOnErr(err)
+		tab := c.Dataset(*ds).Table(*table)
+		return tab.Inserter()
+	}
 
-	batcher := batbq.NewInsertBatcher("clicks", batbq.Config(cfg))
+	patch := func() error {
+		c, err := bigquery.NewClient(ctx, *project)
+		exitOnErr(err)
+		t := c.Dataset(*ds).Table(*table)
+		return patcher.PatchTable(ctx, t, clickSchema)
+	}
+
+	var batcherIDs []string
+	for i := 1; i <= *concurrency; i++ {
+		// all batchers use the same id to report to the same metrics
+		batcherIDs = append(batcherIDs, "click")
+	}
+
+	mb := multibatcher.NewMultiBatcher(batcherIDs, batbq.Config(cfg))
 
 	if *stats {
-		metrics.Watch(ctx, batcher.Metrics())
+		metrics.Watch(ctx, mb.Metrics)
 	}
 
 	if *dry {
 		return
 	}
 
-	exitOnErr(patcher.Patch(ctx, tab, clickSchema))
-
-	go func() {
-		exitOnErr(receive(ctx, sub, input))
-	}()
-
-	exitOnErr(batcher.Process(ctx, input, output))
+	exitOnErr(patch())
+	exitOnErr(mb.MustProcess(ctx, getInput, getOutput))
 }

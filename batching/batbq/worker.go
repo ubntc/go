@@ -63,6 +63,10 @@ func (ins *InsertBatcher) worker(ctx context.Context, num int) {
 			ins.scaling.UpdateLoadLevel(len(batch), len(input), cfg.Capacity)
 		}
 
+		if len(batch) == 0 {
+			return
+		}
+
 		msgCount.Add(float64(len(batch)))
 
 		wg.Add(1) // Ensure we wait for pending puts and (n)acks after the batcher stops.
@@ -95,6 +99,9 @@ func (ins *InsertBatcher) worker(ctx context.Context, num int) {
 			batch = append(batch, msg)
 			if len(batch) >= cfg.Capacity {
 				flush()
+				// Make sure we do not flush more than once per second sending unfilled batches
+				// since this will confuse the autoscaler.
+				ticker.Reset(cfg.FlushInterval)
 			}
 		}
 	}
