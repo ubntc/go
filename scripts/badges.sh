@@ -32,4 +32,4 @@ update_readme() {
 }
 
 test -n "$prefix" || prefix=.cache/cover
-update_readme
+# update_readme #TODO: fix genertation on MacOS

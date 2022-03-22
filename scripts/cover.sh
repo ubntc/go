@@ -8,9 +8,17 @@ cover() {
     prefix=$prefix $here/badges.sh
 }
 
+canonicalize() {
+    if readlink -f "$@" 2> /dev/null ||
+       greadlink -f "$@" 2> /dev/null
+    then true
+    else echo "please install coreutils"; exit 1
+    fi
+}
+
 coverpkg="."  # subpackages to be covered
 packages=""  # standalone packages to be covered separately
-COVERSH=`readlink -f "$0"`
+COVERSH=`canonicalize "$0"`
 here=`dirname $COVERSH`
 prefix=.cache/cover
 mkdir -p .cache
