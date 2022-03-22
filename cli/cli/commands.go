@@ -58,6 +58,8 @@ func (c Commands) Run(r rune) error {
 
 // RunScript runs the given script with the Commands.
 func (c Commands) RunScript(s string) error {
+	//lint:ignore S1029 must use runes
+	//lint:ignore SA6003 must use runes
 	for _, r := range []rune(s) {
 		num := int(r - '0')
 		switch {

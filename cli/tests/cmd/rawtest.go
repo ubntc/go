@@ -17,12 +17,12 @@ import (
 var (
 	fallbackStateTilixTerminal = unix.Termios{
 		Iflag: 17664, Oflag: 5, Cflag: 191, Lflag: 35387,
-		Cc: [19]uint8{3, 28, 127, 21, 4, 0, 1, 0, 17, 19, 26, 0, 18, 15, 23, 22, 0, 0, 0},
+		Cc: [20]uint8{3, 28, 127, 21, 4, 0, 1, 0, 17, 19, 26, 0, 18, 15, 23, 22, 0, 0, 0, 0},
 	}
 
 	fallbackStateVSCodeTerminal = unix.Termios{
 		Iflag: 26624, Oflag: 4, Cflag: 1215, Lflag: 2618,
-		Cc: [19]uint8{3, 28, 127, 21, 4, 0, 1, 0, 17, 19, 26, 255, 18, 15, 23, 22, 255, 0, 0},
+		Cc: [20]uint8{3, 28, 127, 21, 4, 0, 1, 0, 17, 19, 26, 255, 18, 15, 23, 22, 255, 0, 0, 0},
 	}
 )
 

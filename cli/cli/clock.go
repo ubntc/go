@@ -21,9 +21,9 @@ type DisplayTime struct {
 }
 
 var (
-	asciiClock     = strings.Split("/ - \\ |", " ")
-	brailleClock   = strings.Split("⢎⡰ ⢎⡡ ⢎⡑ ⢎⠱ ⠎⡱ ⢊⡱ ⢌⡱ ⢆⡱", " ")
-	brailleSpinner = strings.Split(" ⠁| ⠑| ⠰| ⡰|⢀⡠|⢄⡠|⢆⡀|⢎⡀|⢎ |⠎ |⠊ |⠈ ", "|")
+	// asciiClock     = strings.Split("/ - \\ |", " ")
+	brailleClock = strings.Split("⢎⡰ ⢎⡡ ⢎⡑ ⢎⠱ ⠎⡱ ⢊⡱ ⢌⡱ ⢆⡱", " ")
+	// brailleSpinner = strings.Split(" ⠁| ⠑| ⠰| ⡰|⢀⡠|⢄⡠|⢆⡀|⢎⡀|⢎ |⠎ |⠊ |⠈ ", "|")
 )
 
 // Start starts the clock.

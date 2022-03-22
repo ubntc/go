@@ -44,7 +44,7 @@ func WithoutClock() Option {
 // It returns the received signal and the context's error.
 func SigWait(ctx context.Context, cancel context.CancelFunc) (os.Signal, error) {
 	defer cancel()
-	sig := make(chan os.Signal)
+	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	var s os.Signal
 
@@ -66,7 +66,7 @@ func SigWait(ctx context.Context, cancel context.CancelFunc) (os.Signal, error) 
 // processing input and sets up commands.
 //
 func WithSigWait(parent context.Context, opt ...Option) (context.Context, context.CancelFunc) {
-	sig := make(chan os.Signal)
+	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	input := os.Stdin
 	var inputCommands Commands

@@ -110,7 +110,7 @@ func (c *Term) WrapOutput(w io.Writer) {
 	c.out = w
 }
 
-var reLineEnd = regexp.MustCompile("\n$")
+// var reLineEnd = regexp.MustCompile("\n$")
 var rePendingNL = regexp.MustCompile("[^\n]*$")
 var reStartCR = regexp.MustCompile("[\r]*")
 var reNLCR = regexp.MustCompile("[\n\r]*")
