@@ -12,12 +12,15 @@ func main() {
 	zerologger.Setup(os.Stderr, "")
 	cfg := bt.LoadConfig()
 
-	log.Info().Msg("starting buffertest")
+	log.Info().Strs("brokers", cfg.Writer.Brokers).Msg("starting buffertest")
 	numHandled, err := bt.Run(cfg)
 
-	if numHandled != cfg.NumEvents || err != nil {
-		log.Fatal().Msg("[FAIL] buffertest failed")
-	} else {
+	switch {
+	case err != nil:
+		log.Fatal().Err(err).Msg("[FAIL] buffertest failed with errors")
+	case numHandled < cfg.NumEvents:
+		log.Fatal().Msg("[FAIL] buffertest failed with missing events")
+	default:
 		log.Info().Msg("[OK] buffertest successsful")
 	}
 }

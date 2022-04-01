@@ -37,7 +37,7 @@ func handleEvent(msg kafka.Message) error {
 	n := mxNumHandled.Inc()
 	if n%10 == 1 || true {
 		log.Info().Interface("handleEvent", Map{
-			"msg":         string(msg.Value),
+			"key":         string(msg.Key),
 			"topic":       msg.Topic,
 			"num_handled": n,
 		}).Msg("handled event")
@@ -46,6 +46,8 @@ func handleEvent(msg kafka.Message) error {
 }
 
 func consumeEvents(ctx context.Context, r *kafka.Reader) {
+	log.Info().Msg("start consuming events")
+	defer log.Info().Msg("finished consuming events")
 	for {
 		msg, err := r.ReadMessage(ctx)
 		if err == io.EOF || err == context.Canceled {
@@ -61,6 +63,7 @@ func consumeEvents(ctx context.Context, r *kafka.Reader) {
 }
 
 func produceEvents(ctx context.Context, w *kafka.Writer, numEvents int, tick time.Duration) error {
+	log.Info().Msg("start producing events")
 	var kv *kafka.Message
 	var err error
 	ticker := time.NewTicker(tick)
@@ -84,16 +87,23 @@ func produceEvents(ctx context.Context, w *kafka.Writer, numEvents int, tick tim
 }
 
 func waitForEvents(ctx context.Context, numEvents int, tick time.Duration) error {
-	ticker := time.NewTicker(tick)
-	defer ticker.Stop()
-	for {
-		n := mxNumHandled.Get()
-		finished := n >= numEvents
+	finished := false
+	handled := 0
+	report := func() {
 		log.Info().Interface("waitForEvents", Map{
 			"expected": numEvents,
-			"handled":  n,
+			"handled":  handled,
 			"finished": finished,
 		}).Msg("waiting for events")
+	}
+	defer report()
+
+	ticker := time.NewTicker(tick)
+	defer ticker.Stop()
+
+	for {
+		handled = mxNumHandled.Get()
+		finished = handled >= numEvents
 		if finished {
 			return nil
 		}

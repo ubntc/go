@@ -14,6 +14,7 @@ func LoadConfig() Config {
 	var topic = flag.String("t", "buffertest", "Kafka topic")
 	var timeout = flag.Duration("d", time.Second*20, "send and receive timeout")
 	var numEvents = flag.Int("c", 10, "number of events to send and receive")
+	var numPartitions = flag.Int("p", 10, "number of partitions used when creating topics")
 
 	flag.Parse()
 	brokers := strings.Split(*broker, ",")
@@ -33,6 +34,10 @@ func LoadConfig() Config {
 			GroupID:       *group,
 			QueueCapacity: 1,
 		},
-		Topic: kafka.TopicConfig{Topic: *topic},
+		Topic: kafka.TopicConfig{
+			Topic:             *topic,
+			NumPartitions:     *numPartitions,
+			ReplicationFactor: 1,
+		},
 	}
 }
