@@ -2,7 +2,7 @@
 // Terraform Module Config: Unit "C"
 // =================================
 //
-// This file pickups configurations from the "project" variable
+// This file pickups configurations from the "projects" variable
 // to plan resources for "unit-c" for the configfured stages.
 //
 
