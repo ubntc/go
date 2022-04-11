@@ -1,7 +1,7 @@
 .PHONY: all clean init plan console test
 
 all: init test plan
-clean:   ; rm -rf .terraform*
+clean:   ; rm -rf .terraform terraform.tfstate .terraform.*
 init:    ; terraform $@
 plan:    ; terraform $@
 console: ; terraform $@
