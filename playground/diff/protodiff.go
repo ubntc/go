@@ -13,15 +13,21 @@ func newProtoFlatter() *protoFlatter {
 	return &protoFlatter{make(map[string]string)}
 }
 
-func (pf *protoFlatter) walk(msg proto.Message) {
+func (pf *protoFlatter) walk(msg proto.Message, prefix string) {
 	msg.ProtoReflect().Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
-		switch fd.Kind() {
-		case protoreflect.MessageKind:
-			pf.walk(v.Message().Interface())
-		default:
-			key := string(fd.FullName())
-			pf.dest[key] = v.String()
+		switch {
+		case protoreflect.Repeated == fd.Cardinality():
+			// TODO: handle repeated fields
+		case protoreflect.MessageKind == fd.Kind():
+			msg := v.Message().Interface()
+			if !IsWellKnown(fd, msg) {
+				pf.walk(msg, prefix+fd.JSONName()+".")
+				return true
+			}
 		}
+
+		key := prefix + fd.JSONName()
+		pf.dest[key] = v.String()
 		return true
 	})
 }
@@ -38,7 +44,7 @@ func allKeys(flatters ...*protoFlatter) map[string]int {
 
 func flatten(msg proto.Message) *protoFlatter {
 	pf := newProtoFlatter()
-	pf.walk(msg)
+	pf.walk(msg, "")
 	return pf
 }
 
@@ -46,6 +52,10 @@ func Diff(lhs, rhs proto.Message) map[string]string {
 	pfLeft := flatten(lhs)
 	pfRight := flatten(rhs)
 	keys := allKeys(pfLeft, pfRight)
+	if len(keys) == 0 {
+		return nil
+	}
+
 	changes := make(map[string]string)
 	for k := range keys {
 		l, hasLeft := pfLeft.dest[k]
