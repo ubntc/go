@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/ubntc/go/playground/gocv/transform"
 	"gocv.io/x/gocv"
+	"gocv.io/x/gocv/cuda"
 )
 
 const (
@@ -35,11 +36,18 @@ func main() {
 	defer wnd.Close()
 
 	img := gocv.NewMat()
-	defer img.Close()
+	uimg := cuda.NewGpuMatFromMat(img)
 	scaled := gocv.NewMat()
-	defer scaled.Close()
+	uscaled := cuda.NewGpuMat()
+	udst := cuda.NewGpuMat()
 	dst := gocv.NewMat()
+
+	defer img.Close()
+	defer uimg.Close()
+	defer scaled.Close()
+	defer uscaled.Close()
 	defer dst.Close()
+	defer udst.Close()
 
 	log.Printf("using webcam: %v (%v x %v)\n", dev, w, h)
 	for {
@@ -52,8 +60,9 @@ func main() {
 
 		scale := 5
 		ws, hs := w*scale, h*scale
-		transform.ScaleUp(img, &scaled, float64(scale))
-		transform.AffineTransform(scaled, &dst, ws, hs)
+		transform.GpuScaleUp(uimg, &uscaled, float64(scale))
+
+		transform.GpuAffineTransform(uscaled, &udst, ws, hs)
 		wnd.IMShow(dst)
 
 		switch key := wnd.WaitKey(1); key {
