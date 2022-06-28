@@ -16,3 +16,7 @@
 
 .vscode
 .cache
+
+# Crappy hidden Apple folders everywhere. 🤦
+# Why can't they store that in a central place? 🤷
+.DS_Store
