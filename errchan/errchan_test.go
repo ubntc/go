@@ -13,7 +13,6 @@ func TestErrChanString(t *testing.T) {
 	ch <- errors.New("test")
 	assert.Equal(t, "test\ntest", errch.String())
 	assert.Equal(t, "test\ntest", errch.String())
-
 }
 
 func TestErrChanList(t *testing.T) {
@@ -31,7 +30,6 @@ func TestErrChanList(t *testing.T) {
 	}
 	assert.Equal(t, errs, errch.Errors())
 	assert.Equal(t, errs, errch.Errors())
-
 }
 
 func TestEmptyErrChan(t *testing.T) {
