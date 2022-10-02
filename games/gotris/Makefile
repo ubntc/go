@@ -8,4 +8,7 @@ debug:
 	go test -v -race ./...
 
 run:
-	go run cmd/main.go
+	go run cmd/gotris/gotris.go
+
+install:
+	go install cmd/gotris/gotris.go
