@@ -17,7 +17,7 @@ func TestClear(t *testing.T) {
 	assert.NoError(t, err)
 	term := New(dummyout)
 
-	term.Clear()
+	term.Print(term.ClearString())
 	term.RunClearCommand()
 
 	/*

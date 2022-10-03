@@ -9,6 +9,16 @@ import (
 	xterm "golang.org/x/term"
 )
 
+const EnvTermApp = "TERM_PROGRAM"
+
+type TermApp string
+
+const (
+	TermAppAppleTerminal = "Apple_Terminal"
+	TermAppITerm         = "iTerm.app"
+	TermAppVscode        = "vscode"
+)
+
 const (
 	EscClearScreen = "\x1b[2J"
 	EscGotoTopLeft = "\x1b[0;0f"
@@ -54,10 +64,26 @@ func (t *Terminal) RunClearCommand() {
 	callClearFunc(t.stdout)
 }
 
-// Clear sends ANSI codes for clearing the screen and setting the cursor to 0,0.
+// Clear clears the screen and setting the cursor to 0,0.
 func (t *Terminal) Clear() {
+	switch os.Getenv(EnvTermApp) {
+	case TermAppAppleTerminal, TermAppVscode:
+		// flickers in iTerm2
+		t.Print(t.ClearString())
+	case TermAppITerm:
+		// fixes flickering iTerm2
+		t.Overpaint()
+	default:
+		// works in VSCode term and Apple_Terminal but flickers in iTerm2
+		// best for cross-platform
+		t.RunClearCommand()
+	}
+}
+
+// ClearString returns the ANSI codes for clearing the screen and setting the cursor to 0,0.
+func (t *Terminal) ClearString() string {
 	// works in iTerm2 and VSCode terminal with minor flickering
-	t.Print(EscGotoTopLeft + EscClearScreen + EscGotoTopLeft)
+	return EscGotoTopLeft + EscClearScreen + EscGotoTopLeft
 }
 
 // Print prints the values to the terminal's file descriptor.
