@@ -5,16 +5,18 @@ import (
 	"testing"
 
 	"github.com/ubntc/go/games/gotris/game"
+	"github.com/ubntc/go/games/gotris/input"
 )
 
-type Renderer struct{}
+type Platform struct{}
 
-func (r *Renderer) Render(game *game.Game) {}
-func (r *Renderer) RenderText(text string) {}
-func (r *Renderer) CaptureInput(context.Context) (<-chan []rune, func(), error) {
+func (r *Platform) Render(game *game.Game)    {}
+func (r *Platform) RenderScreen(text string)  {}
+func (r *Platform) RenderMessage(text string) {}
+func (r *Platform) CaptureInput(context.Context) (<-chan input.Key, func(), error) {
 	return nil, nil, nil
 }
 
 func TestLoop(t *testing.T) {
-	game.Run(game.TestRules, &Renderer{}, game.CaptureOff)
+	game.NewGame(game.TestRules, &Platform{}).Run(game.CaptureOff)
 }

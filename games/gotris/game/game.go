@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/ubntc/go/games/gotris/game/geometry"
+	"github.com/ubntc/go/games/gotris/game/screens"
+	"github.com/ubntc/go/games/gotris/input"
 )
 
 // Game stores the game state
@@ -20,14 +23,19 @@ type Game struct {
 	CurrentTile *Tile
 	NextTile    *Tile
 
-	Board PointMap
+	BoardPos Dim
+	Board    geometry.PointMap
+
+	platform Platform
+	input    <-chan input.Key
 }
 
-func NewGame(rules Rules) *Game {
+func NewGame(rules Rules, platform Platform) *Game {
 	g := &Game{
-		Rules: rules,
-		Board: make(PointMap),
-		Speed: rules.TickTime,
+		Rules:    rules,
+		Board:    make(geometry.PointMap),
+		Speed:    rules.TickTime,
+		platform: platform,
 	}
 	switch g.Seed {
 	case SeedRandom:
@@ -50,13 +58,13 @@ func (g *Game) SpawnTiles() {
 	// move tile to the board
 	dx := g.BoardSize.Width / 2
 	dy := g.BoardSize.Height - 1
-	t.points = OffsetPointsXY(t.points, dx, dy)
+	t.points = geometry.OffsetPointsXY(t.points, dx, dy)
 	g.CurrentTile = t
 }
 
 func (g *Game) Advance() (err error) {
 	g.Steps += 1
-	if err = g.Move(g.CurrentTile, DirDown); err != nil {
+	if err = g.Move(g.CurrentTile, geometry.DirDown); err != nil {
 		// tile hit another tile or the ground
 		// split tile into blocks and check for lines
 		// if the split fails the game is over (we are stuck somewhere on the top)
@@ -96,8 +104,8 @@ func (g *Game) ResolveTile(t *Tile) error {
 	return nil
 }
 
-func (g *Game) ModifyTile(t *Tile, points []Point, ori Dir, center int) error {
-	if !PointsInRange(points, g.BoardSize.Width, g.BoardSize.Height+4) {
+func (g *Game) ModifyTile(t *Tile, points []geometry.Point, ori geometry.Dir, center int) error {
+	if !geometry.PointsInRange(points, g.BoardSize.Width, g.BoardSize.Height+4) {
 		return errors.New("tile not inside screen")
 	}
 	if g.Board.ContainsAny(points) {
@@ -108,8 +116,8 @@ func (g *Game) ModifyTile(t *Tile, points []Point, ori Dir, center int) error {
 }
 
 // Move move a given tile one step in the given direction (U|D|L|R).
-func (g *Game) Move(t *Tile, dir Dir) error {
-	points := OffsetPointsDir(t.Points(), dir)
+func (g *Game) Move(t *Tile, dir geometry.Dir) error {
+	points := geometry.OffsetPointsDir(t.Points(), dir)
 	if err := g.ModifyTile(t, points, t.orientation, t.center); err != nil {
 		return errors.Wrap(err, "cannot move")
 	}
@@ -117,7 +125,7 @@ func (g *Game) Move(t *Tile, dir Dir) error {
 }
 
 // Rotate rotates (and if needed moves) the given tile in the given direction (CW|CCW)
-func (g *Game) Rotate(t *Tile, r Spin) error {
+func (g *Game) Rotate(t *Tile, r geometry.Spin) error {
 	points, ori, center := t.RotatedPoints(r)
 	if err := g.ModifyTile(t, points, ori, center); err != nil {
 		return errors.Wrap(err, "cannot rotate")
@@ -125,14 +133,14 @@ func (g *Game) Rotate(t *Tile, r Spin) error {
 	return nil
 }
 
-func (g *Game) RotateAndMove(t *Tile, r Spin) (err error) {
+func (g *Game) RotateAndMove(t *Tile, r geometry.Spin) (err error) {
 	if err = g.Rotate(t, r); err == nil {
 		return err
 	}
-	if err = g.Move(t, DirRight); err == nil {
+	if err = g.Move(t, geometry.DirRight); err == nil {
 		return g.Rotate(t, r)
 	}
-	if err = g.Move(t, DirLeft); err == nil {
+	if err = g.Move(t, geometry.DirLeft); err == nil {
 		return g.Rotate(t, r)
 	}
 	return err
@@ -140,7 +148,7 @@ func (g *Game) RotateAndMove(t *Tile, r Spin) (err error) {
 
 func (g *Game) Drop(t *Tile) error {
 	for {
-		if err := g.Move(t, DirDown); err != nil {
+		if err := g.Move(t, geometry.DirDown); err != nil {
 			return err
 		}
 	}
@@ -198,15 +206,37 @@ func (g *Game) Dump() {
 }
 
 func (g *Game) RunCommand(cmd Cmd) error {
-	if dir := cmd.ToDir(); dir != DirUnkown {
+	if dir := cmd.ToDir(); dir != geometry.DirUnkown {
 		return g.Move(g.CurrentTile, dir)
 	}
-	if spin := cmd.ToSpin(); spin != SpinUnknown {
+	if spin := cmd.ToSpin(); spin != geometry.SpinUnknown {
 		return g.RotateAndMove(g.CurrentTile, spin)
 	}
-	if cmd == CmdDrop {
+	switch cmd {
+	case CmdDrop:
 		g.Drop(g.CurrentTile)
 		g.Advance()
+	case CmdHelp:
+		g.ShowScreen(screens.Controls, 0)
+	case CmdMoveBoardLeft:
+		if g.BoardPos.Width > 1 {
+			g.BoardPos.Width -= 1
+		}
+	case CmdMoveBoardRight:
+		g.BoardPos.Width += 1
+	case CmdMoveBoardUp:
+		if g.BoardPos.Height > 1 {
+			g.BoardPos.Height -= 1
+		}
+	case CmdMoveBoardDown:
+		g.BoardPos.Height += 1
+	default:
+		return fmt.Errorf("unknown command: %s", cmd)
 	}
-	return fmt.Errorf("unknown command: %s", cmd)
+	return nil
+}
+
+func (g *Game) ShowScreen(screen string, timeout time.Duration) {
+	g.platform.RenderScreen(screen)
+	input.AwaitInput(g.input, timeout)
 }

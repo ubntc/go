@@ -15,18 +15,27 @@ type Platform struct {
 	terminal.Terminal
 }
 
+var DEBUG = os.Getenv("DEBUG") != ""
+
 func (p *Platform) Render(g *game.Game) {
 	p.Clear()
 	p.Print(strings.Join(rendering.Render(g), "\r\n"))
 }
 
-func (p *Platform) RenderText(text string) {
+func (p *Platform) RenderScreen(text string) {
 	p.Clear()
 	lines := strings.Split(text, "\n")
 	p.Print(strings.Join(lines, "\r\n    "))
 }
 
+func (p *Platform) RenderMessage(text string) {
+	if DEBUG {
+		lines := strings.Split("\n"+text, "\n")
+		p.Print(strings.Join(lines, "\r\n"))
+	}
+}
+
 func main() {
 	p := Platform{*terminal.New(os.Stdout)}
-	game.Run(game.DefaultRules, &p, game.CaptureOn)
+	game.NewGame(game.DefaultRules, &p).Run(game.CaptureOn)
 }

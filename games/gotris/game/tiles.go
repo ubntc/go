@@ -1,6 +1,10 @@
 package game
 
-import "math/rand"
+import (
+	"math/rand"
+
+	"github.com/ubntc/go/games/gotris/game/geometry"
+)
 
 type Typ string
 
@@ -35,10 +39,6 @@ var Tiles = []struct {
 	{TypZ, "🟪", []string{"xc, xx", " x,xc,x", "xx, cx", " x,cx,x"}},
 }
 
-//  More coloring ideas:
-//  ░▒▓█  ▤▥▦▧▨▩▣
-//  🟥🟦🟧🟨🟩🟪🟫
-
 var (
 	// Drawings by type
 	Drawings = make(map[Typ][]string, len(Tiles))
@@ -55,26 +55,26 @@ func init() {
 
 type Tile struct {
 	typ         Typ
-	orientation Dir
-	points      []Point
+	orientation geometry.Dir
+	points      []geometry.Point
 	center      int
 }
 
 func NewTile(typ Typ, x, y int) *Tile {
-	points, ori, center := PointsForType(typ, DirUp)
+	points, ori, center := PointsForType(typ, geometry.DirUp)
 	return &Tile{
 		typ:         typ,
 		orientation: ori,
-		points:      OffsetPointsXY(points, x, y),
+		points:      geometry.OffsetPointsXY(points, x, y),
 		center:      center,
 	}
 }
 
-func (t *Tile) Points() []Point {
+func (t *Tile) Points() []geometry.Point {
 	return t.points
 }
 
-func (t *Tile) SetPoints(points []Point, ori Dir, center int) {
+func (t *Tile) SetPoints(points []geometry.Point, ori geometry.Dir, center int) {
 	t.points = points
 	t.orientation = ori
 	t.center = center
@@ -84,14 +84,14 @@ func (t *Tile) Orientations() []string {
 	return Drawings[t.typ]
 }
 
-func (t *Tile) RotatedPoints(spin Spin) (points []Point, orientation Dir, center int) {
+func (t *Tile) RotatedPoints(spin geometry.Spin) (points []geometry.Point, orientation geometry.Dir, center int) {
 	oris := t.Orientations()
-	numOris := Dir(len(oris))
-	ori := Dir(t.orientation)
+	numOris := geometry.Dir(len(oris))
+	ori := geometry.Dir(t.orientation)
 	switch spin {
-	case SpinLeft:
+	case geometry.SpinLeft:
 		ori = (ori + numOris - 1) % numOris
-	case SpinRight:
+	case geometry.SpinRight:
 		ori = (ori + 1) % numOris
 	}
 
@@ -100,12 +100,12 @@ func (t *Tile) RotatedPoints(spin Spin) (points []Point, orientation Dir, center
 
 	// move the points in place
 	x, y := t.Position()
-	points = OffsetPointsXY(points, x, y)
+	points = geometry.OffsetPointsXY(points, x, y)
 
 	return points, dir, center
 }
 
-func (t *Tile) Center() Point {
+func (t *Tile) Center() geometry.Point {
 	return t.points[t.center]
 }
 
@@ -132,11 +132,11 @@ func RandomTile() *Tile {
 // instructions of the tile type and the given orientation. The resulting orientation
 // and the index of the center point are returned as additional return values.
 // All three values are needed to fully specify a tile on the game board.
-func PointsForType(typ Typ, orientation Dir) ([]Point, Dir, int) {
-	points := make([]Point, 0, 4)
+func PointsForType(typ Typ, orientation geometry.Dir) ([]geometry.Point, geometry.Dir, int) {
+	points := make([]geometry.Point, 0, 4)
 	x := 0
 	y := 0
-	orientation = orientation % Dir(len(Drawings[typ]))
+	orientation = orientation % geometry.Dir(len(Drawings[typ]))
 	center := 0
 	for _, instruction := range Drawings[typ][orientation] {
 		switch instruction {
@@ -144,7 +144,7 @@ func PointsForType(typ Typ, orientation Dir) ([]Point, Dir, int) {
 			center = len(points)
 			fallthrough
 		case 'x':
-			points = append(points, Point{x, y})
+			points = append(points, *geometry.NewPoint(x, y))
 			fallthrough
 		case ' ':
 			x += 1
@@ -154,5 +154,9 @@ func PointsForType(typ Typ, orientation Dir) ([]Point, Dir, int) {
 		}
 	}
 	c := points[center]
-	return OffsetPointsXY(points, -c.X, -c.Y), Dir(orientation), center
+	return geometry.OffsetPointsXY(points, -c.X, -c.Y), geometry.Dir(orientation), center
+}
+
+func MergeTile(t *Tile, blocks geometry.PointMap) {
+	blocks.SetAll(t.Points(), Blocks[t.Typ()])
 }

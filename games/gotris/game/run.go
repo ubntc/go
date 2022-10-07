@@ -2,7 +2,6 @@ package game
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,84 +13,71 @@ type Capturing bool
 const (
 	// capture all terminal input
 	CaptureOn Capturing = true
-	// do not capture all terminal input (for tests)
+	// do not capture terminal input (for tests)
 	CaptureOff Capturing = false
 )
 
-type Platform interface {
-	CaptureInput(context.Context) (<-chan []rune, func(), error)
-	Render(*Game)
-	RenderText(string)
-}
-
-// Run is the main Game Run, managing user input
-// and state changes in the game in a step by step way.
-func Run(rules Rules, platform Platform, capture Capturing) {
+// Run starts the main loop of the game. It also manages user input and uses
+// the game's defined platform to render the game.
+func (g *Game) Run(capture Capturing) error {
 	// TODO: allow speedup of ticker on higher levels
-	g := NewGame(rules)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var runes <-chan []rune
+	var gameOverTimeout time.Duration
 
 	// do not capture input during tests
 	if capture {
-		ch, restore, err := platform.CaptureInput(ctx)
+		ch, restore, err := g.platform.CaptureInput(ctx)
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
 		defer restore()
-		runes = ch
+		g.input = ch
+		gameOverTimeout = time.Second * 5
 	}
 
-	showScreen := func(text string) {
-		platform.RenderText(text)
-		if capture {
-			<-runes
-		}
+	g.ShowScreen(screens.WelcomeScreen, 0)
+
+	if err := g.Loop(ctx); err != nil {
+		g.ShowScreen(screens.GameOver, gameOverTimeout)
 	}
 
+	// redraw the game to show the last Game state after the GameOver screen
+	g.platform.Render(g)
+
+	return nil
+}
+
+func (g *Game) Loop(ctx context.Context) error {
+	var lastErr error
 	ticker := time.NewTicker(g.TickTime)
 	defer ticker.Stop()
-
-	var keys []rune
-	var more bool
-	var lastError error
-
-	showScreen(screens.WelcomeScreen)
-
 	for {
-		platform.Render(g)
-		g.Message = map[string]interface{}{
-			// "score": g.Score,
-			// "keys":  keys,
-			"error": lastError,
-			"speed": g.Speed,
+		g.platform.Render(g)
+		if lastErr != nil {
+			g.platform.RenderMessage(lastErr.Error())
 		}
+
 		select {
 		case <-ctx.Done():
-			return
-		case keys, more = <-runes:
+			return nil
+		case key, more := <-g.input:
 			if !more {
-				return
+				return nil
 			}
-			if cmd, ok := KeyToCmd(keys...); ok {
-				if err := g.RunCommand(cmd); err != nil {
-					lastError = err
-				}
+			if cmd, ok := KeyToCmd(key); ok {
+				lastErr = g.RunCommand(cmd)
 			}
 		case <-ticker.C:
 			ticker.Reset(time.Duration(g.Speed))
 			if err := g.Advance(); err != nil {
-				// lastError = errors.Wrap(err, "GAME OVER!")
-				cancel()
-				showScreen(screens.GameOver)
+				lastErr = err
+				return errors.Wrap(err, "GAME OVER!")
 			}
-			// echo("advanced game", "step", game.Steps, "current", game.CurrentTile, "next", game.NextTile)
 			if g.MaxSteps > 0 && g.Steps > g.MaxSteps {
-				lastError = errors.New("GAME END!")
-				cancel()
+				return errors.New("GAME END!")
 			}
 		}
 	}
