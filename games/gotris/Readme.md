@@ -85,5 +85,17 @@ Therefore, here is my journey of things implemented.
   1. Playing with testability of the terminal (capture input, get width in tests)
   1. While doing this, make Terminal a class with stdout configurable
   1. Add function docs for many public methods.
-  1. Add more key maopings (forgot to setup WASD 😅)
+  1. Add more key mappings (forgot to setup WASD 😅)
   1. Add title screen and game over screen
+  1. Experiments with more full-width anmd half-width box drawing
+  1. Use nice full-width letters for true blocky look
+  1. Add more text art and a help screen
+  1. More files to subpackages to unclutter the game package
+  1. Make make platform and input structs of the game to avoid hacky closures
+  1. More explicit key handling (do not just send runes)
+  1. Create shared input package to resolve dependcy cycle
+  1. Grab key modifiers and use them for something cool (shift game screen)
+  1. More comments and removal of dead code
+  1. Some core method renaming and signature changes gave some ideas for new features
+  1. Adding platform feature to print (debug) messages in a nice place
+  1. Fixed broken tests that did not respect the new way of input handling
