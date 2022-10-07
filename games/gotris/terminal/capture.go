@@ -7,13 +7,32 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/ubntc/go/games/gotris/input"
 	xterm "golang.org/x/term"
 )
 
 var debug = os.Getenv("DEBUG") != ""
 
-func (t *Terminal) CaptureInput(ctx context.Context) (<-chan []rune, func(), error) {
-	runes := make(chan []rune)
+type key struct {
+	rune  rune
+	mod   input.Mod
+	runes []rune
+}
+
+func (k *key) Rune() rune {
+	return k.rune
+}
+
+func (k *key) Mod() input.Mod {
+	return k.mod
+}
+
+func (k *key) Runes() []rune {
+	return k.runes
+}
+
+func (t *Terminal) CaptureInput(ctx context.Context) (<-chan input.Key, func(), error) {
+	keys := make(chan input.Key)
 	stdin := int(t.stdin.Fd())
 
 	state, err := xterm.MakeRaw(stdin)
@@ -32,9 +51,9 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan []rune, func(), err
 		}
 	}
 
-	sendRunes := func(buf []rune) {
+	sendKey := func(r rune, mod input.Mod, runes []rune) {
 		select {
-		case runes <- buf:
+		case keys <- &key{r, input.Mod(mod), runes}:
 		default:
 			// ignore new input if prev. input is not processed
 		}
@@ -52,10 +71,11 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan []rune, func(), err
 	go func() {
 		defer func() {
 			restore()
-			close(runes)
+			close(keys)
 		}()
 		in := bufio.NewReader(os.Stdin)
 		var buf []rune
+		var mod input.Mod
 
 		for {
 			if stopRequested() {
@@ -71,10 +91,27 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan []rune, func(), err
 			}
 
 			switch handleRune(len(buf), r) {
+			case actionSendWithAltAsMovement:
+				mod |= input.ModAlt | input.ModMove
+				fallthrough
 			case actionAppendAndSend:
-				sendRunes(append(buf, r))
+				sendKey(r, mod, append(buf, r))
+				mod = 0
 				buf = nil
-			case actionAppendControl:
+			case actionAppendAlt:
+				mod |= input.ModAlt
+			case actionAppendCtrl:
+				mod |= input.ModCtrl
+			case actionAppendShift:
+				mod |= input.ModShift
+			case actionAppendAltShift:
+				mod |= input.ModAlt | input.ModShift
+			case actionAppendCtrlShift:
+				mod |= input.ModCtrl | input.ModShift
+			case actionAppendMovement:
+				mod |= input.ModMove
+				fallthrough
+			case actionAppendPartial, actionAppendEscape:
 				buf = append(buf, r)
 			case actionQuit:
 				return
@@ -82,5 +119,5 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan []rune, func(), err
 		}
 	}()
 
-	return runes, restore, nil
+	return keys, restore, nil
 }

@@ -10,6 +10,7 @@ import (
 type Renderer struct{}
 
 func (r *Renderer) Render(game *game.Game) {}
+func (r *Renderer) RenderText(text string) {}
 func (r *Renderer) CaptureInput(context.Context) (<-chan []rune, func(), error) {
 	return nil, nil, nil
 }

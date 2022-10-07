@@ -13,8 +13,8 @@ func Test_handleRune(t *testing.T) {
 		{"end of text ctrl-c 3", 0, 3, actionQuit},
 		{"end of xmit ctrl-d 4", 0, 4, actionQuit},
 
-		{"escape code start 27", 0, 27, actionAppendControl},
-		{"escape code navigation keys 91", 1, 91, actionAppendControl},
+		{"escape code start 27", 0, 27, actionAppendEscape},
+		{"escape code navigation keys 91", 1, 91, actionAppendMovement},
 		{"escape final code arrow up", 2, 65, actionAppendAndSend},
 		{"escape final code arrow down", 2, 66, actionAppendAndSend},
 		{"escape final code arrow right", 2, 67, actionAppendAndSend},

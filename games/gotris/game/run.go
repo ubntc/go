@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/ubntc/go/games/gotris/game/screens"
 )
 
 type Capturing bool
@@ -20,6 +21,7 @@ const (
 type Platform interface {
 	CaptureInput(context.Context) (<-chan []rune, func(), error)
 	Render(*Game)
+	RenderText(string)
 }
 
 // Run is the main Game Run, managing user input
@@ -43,12 +45,21 @@ func Run(rules Rules, platform Platform, capture Capturing) {
 		runes = ch
 	}
 
+	showScreen := func(text string) {
+		platform.RenderText(text)
+		if capture {
+			<-runes
+		}
+	}
+
 	ticker := time.NewTicker(g.TickTime)
 	defer ticker.Stop()
 
 	var keys []rune
 	var more bool
 	var lastError error
+
+	showScreen(screens.WelcomeScreen)
 
 	for {
 		platform.Render(g)
@@ -73,8 +84,9 @@ func Run(rules Rules, platform Platform, capture Capturing) {
 		case <-ticker.C:
 			ticker.Reset(time.Duration(g.Speed))
 			if err := g.Advance(); err != nil {
-				lastError = errors.Wrap(err, "GAME OVER!")
+				// lastError = errors.Wrap(err, "GAME OVER!")
 				cancel()
+				showScreen(screens.GameOver)
 			}
 			// echo("advanced game", "step", game.Steps, "current", game.CurrentTile, "next", game.NextTile)
 			if g.MaxSteps > 0 && g.Steps > g.MaxSteps {

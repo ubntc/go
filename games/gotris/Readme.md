@@ -85,3 +85,5 @@ Therefore, here is my journey of things implemented.
   1. Playing with testability of the terminal (capture input, get width in tests)
   1. While doing this, make Terminal a class with stdout configurable
   1. Add function docs for many public methods.
+  1. Add more key maopings (forgot to setup WASD 😅)
+  1. Add title screen and game over screen

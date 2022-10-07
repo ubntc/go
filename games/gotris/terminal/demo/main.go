@@ -8,6 +8,13 @@ import (
 	"github.com/ubntc/go/games/gotris/terminal"
 )
 
+// func scan() {
+// 	scanner := bufio.NewScanner(os.Stdin)
+// 	for scanner.Scan() {
+// 		fmt.Println("key:", scanner.Text())
+// 	}
+// }
+
 func main() {
 	t := terminal.New(os.Stdout)
 	input, restore, err := t.CaptureInput(context.Background())
@@ -27,24 +34,25 @@ func main() {
 
 	echo("-------------------------------------------------")
 	echo("Press 'c', 'x', or 'o' to test the clear methods.")
-	echo("Hold the key to test the clear speed.")
-	echo("Press 'p' to start.")
+	echo("Hold the key to test the clear speed.            ")
+	echo("Press 'p' to start.                              ")
 	echo("-------------------------------------------------")
 
 	i := 0
 	for {
 		select {
-		case buf, more := <-input:
+		case key, more := <-input:
 			if !more {
 				return
 			}
 			if debug {
-				echo("buf", buf)
+				echo("key: ", key.Rune(), key.Mod(), key.Runes())
 			}
+			buf := key.Runes()
 			if len(buf) != 1 {
 				continue
 			}
-			switch buf[0] {
+			switch key.Rune() {
 			case 'c':
 				t.Clear()
 				echo("Cleared")

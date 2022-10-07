@@ -6,17 +6,24 @@ func KeyToCmd(keys ...rune) (cmd Cmd, ok bool) {
 	case 1:
 		key := keys[0]
 		switch key {
-		case 'd', 'D':
-			cmd = CmdMoveDown
-		case 'u', 'U':
+		case 'w', 'W':
+			// use "WASD up" as additional rotation key to allow one-handed play
 			cmd = CmdRotateRight
-		case 'l', 'L':
+		case 's', 'S':
+			cmd = CmdMoveDown
+		case 'a', 'A':
 			cmd = CmdMoveLeft
-		case 'r', 'R':
+		case 'd', 'D':
 			cmd = CmdMoveRight
-		case 'y', 'Y', 'z', 'Z':
+		case 'z', 'Z':
 			cmd = CmdRotateLeft
 		case 'x', 'X':
+			cmd = CmdRotateRight
+		case 'y', 'Y': // Y is next to X German layout
+			cmd = CmdRotateLeft
+		case 'c', 'C': // setup C + V as alternative keys
+			cmd = CmdRotateLeft
+		case 'v', 'V': // setup C + V as alternative keys
 			cmd = CmdRotateRight
 		case 32:
 			cmd = CmdDrop
