@@ -236,7 +236,7 @@ func (g *Game) RunCommand(cmd Cmd) error {
 	return nil
 }
 
-func (g *Game) ShowScreen(screen string, timeout time.Duration) {
+func (g *Game) ShowScreen(screen string, timeout time.Duration) input.Key {
 	g.platform.RenderScreen(screen)
-	input.AwaitInput(g.input, timeout)
+	return input.AwaitInput(g.input, timeout)
 }

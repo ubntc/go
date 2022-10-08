@@ -24,16 +24,17 @@ type Key interface {
 }
 
 // AwaitInput waits for user input or a given timeout.
-func AwaitInput(input <-chan Key, timeout time.Duration) {
+func AwaitInput(input <-chan Key, timeout time.Duration) (key Key) {
 	switch {
 	case input == nil:
 		time.Sleep(timeout)
 	case timeout == 0:
-		<-input
+		key = <-input
 	case timeout != 0:
 		select {
-		case <-input:
+		case key = <-input:
 		case <-time.After(timeout):
 		}
 	}
+	return
 }

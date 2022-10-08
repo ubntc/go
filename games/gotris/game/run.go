@@ -38,7 +38,15 @@ func (g *Game) Run(capture Capturing) error {
 		gameOverTimeout = time.Second * 5
 	}
 
-	g.ShowScreen(screens.WelcomeScreen, 0)
+	// title screen loop
+	for {
+		key := g.ShowScreen(screens.WelcomeScreen, 0)
+		if cmd, ok := KeyToCmd(key); ok && cmd == CmdHelp {
+			g.ShowScreen(screens.Controls, 0)
+			continue
+		}
+		break
+	}
 
 	if err := g.Loop(ctx); err != nil {
 		g.ShowScreen(screens.GameOver, gameOverTimeout)
