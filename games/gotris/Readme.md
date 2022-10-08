@@ -1,5 +1,9 @@
 # Gotris
-
+```
+  　🟪🟪　╔═╗╔═╗╔╦╗╦═╗╦╔═╗　🟦🟦　　
+  🟪🟪　　║ ╦║ ║ ║ ╠╦╝║╚═╗　　🟦🟦　
+  　　　　╚═╝╚═╝ ╩ ╩╚═╩╚═╝　　　　　
+```
 Gotris is an experimental implementation of a the famous block dropping game.
 
 The goal of this project is to learn how to implement all aspects of such a game
@@ -7,41 +11,45 @@ using only the Go standard library without much need for external dependencies.
 In some places dependecies may be pulled in to avoid too much custom code.
 
 ```
-⎛﹋﹋﹋﹋﹋﹋﹋﹋⎞
-│　　　　　　　　│  NEXT
-│　　　　　　　　│  　　　　　
-│　　　　　　　　│  🟪🟪　　　
-│　　　　　　　　│  　🟪🟪　　
-│　　🟩🟩🟩　　　│  　　　　　
-│　　　🟩　　　　│
-│　　　　　　　　│  SCORE
+┌一一一一一一一一┐
+│　　　　　　　　│  ＮＥＸＴ
+│　　　　　　　　│
+│　　　　　　　　│  🟫🟫　　
+│　　　　🟥　　　│  🟫🟫　　
+│　　　　🟥　　　│
+│　　　　🟥🟥　　│
+│　　　　　　　　│  ＳＣＯＲＥ
 │　　　　　　　　│
 │　　　　　　　　│  0
 │　　　　　　　　│
-│　　　　　　🟦　│  Speed
-│　　　　　🟪🟦🟦│
-│　🟧🟧　🟪🟪🟦🟦│  1000 ms
-│　🟧🟫🟫🟪🟩🟦🟦│
-│　🟧🟫🟫🟩🟩🟩🟦│
-│﹋﹋﹋﹋﹋﹋﹋﹋│
-⎝﹏﹏﹏﹏﹏﹏﹏﹏⎠
+│🟨　　　　　　　│  ＬＥＶＥＬ
+│🟨🟧　　🟦　　　│
+│🟨🟧🟧🟧🟦🟦🟨　│  1000
+│🟨🟪🟩🟩🟩🟦🟨　│
+│🟪🟪🟩🟩🟫🟫🟨　│
+│🟪🟩🟩🟩🟫🟫🟨　│
+│￣￣￣￣￣￣￣￣│
+└一一一一一一一一┘
 ```
 
 The game is very playable and runs on Linux and MacOS.
 
-Run it with:
+## Running the game
 
+Git clone this repo and run it with `go run cmd/gotris/gotris.go` or directly install it using:
 ```
-go run cmd/main.go
+go install github.com/ubntc/go/games/gotris/cmd/gotris@latest
 ```
+And then just run `gotris`.
 
 ## Features
 
  1. 🌈 Colors! (requires unicode terminal)
  2. 🚀 Low lag and fast input! (for me it is really fun to play)
  3. 🪄 Smart rotation! (allow rotation on edge of the board)
- 4. 🔢 All keys mapped! (so the game is fun to play in any country 🤞)
+ 4. 🔢 Many keys mapped! (press H or ? to see controls)
  5. 🫣 Preview of next tile! (without would not be fun)
+ 6. 👨‍🎨 ASCII/Unicode Art (mindblowing title and help screen)
 
 ## Missing Features
 
@@ -55,10 +63,14 @@ go run cmd/main.go
 * Non-Standard Tiles
 * In-Game Menus and Options
 
+## [Screenshots](Screenshots.md)
+
+## [Bugs](Bugs.md)
+
 ## Tested On
 
 * Linux Rasberry Pi 4 (32bit, go 1.19, needs fonts-noto-color-emoji package)
-* MacOS in iTerm and the VSCode terminal (M1 CPU, go 1.18)
+* MacOS iTerm/Appleterm and the VSCode terminal (M1 CPU, go 1.18)
 
 ## Implementation History
 
