@@ -51,6 +51,10 @@ func (cmd Cmd) ToSpin() geometry.Spin {
 }
 
 func KeyToCmd(key input.Key) (cmd Cmd, ok bool) {
+	if key == nil {
+		return CmdUnknown, false
+	}
+
 	cmd = CmdUnknown
 	defer func() {
 		ok = (cmd != CmdUnknown)
