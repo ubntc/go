@@ -7,8 +7,13 @@ import (
 )
 
 type Platform interface {
-	CaptureInput(context.Context) (<-chan input.Key, func(), error)
-	Render(*Game)
-	RenderScreen(string)
-	RenderMessage(string)
+	CaptureInput(ctx context.Context) (<-chan input.Key, func(), error)
+
+	Render(game *Game)
+	RenderScreen(textArt string)
+	RenderMessage(message string)
+
+	RenderingModes() (names []string, currentMode int)
+	RenderingInfo(name string) string
+	SetRenderingMode(mode string) error
 }
