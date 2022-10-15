@@ -8,7 +8,8 @@ import (
 type Cmd string
 
 const (
-	CmdUnknown     Cmd = "unknown command"
+	CmdEmpty Cmd = ""
+
 	CmdQuit        Cmd = "quit"
 	CmdMoveLeft    Cmd = "move left"
 	CmdMoveRight   Cmd = "move right"
@@ -23,7 +24,10 @@ const (
 	CmdMoveBoardUp    Cmd = "move board up"
 	CmdMoveBoardDown  Cmd = "move board down"
 
-	CmdHelp Cmd = "help"
+	CmdSelectMode Cmd = "select rendering mode in-game"
+
+	CmdHelp    Cmd = "help"
+	CmdOptions Cmd = "options"
 )
 
 func (cmd Cmd) ToDir() geometry.Dir {
@@ -50,20 +54,12 @@ func (cmd Cmd) ToSpin() geometry.Spin {
 	return geometry.SpinUnknown
 }
 
-func KeyToCmd(key input.Key) (cmd Cmd, ok bool) {
+func KeyToCmd(key input.Key) (cmd Cmd, arg string) {
 	if key == nil {
-		return CmdUnknown, false
+		return
 	}
 
-	cmd = CmdUnknown
-	defer func() {
-		ok = (cmd != CmdUnknown)
-	}()
-
-	isMov := (key.Mod() & input.ModMove) != 0
-	isAlt := (key.Mod() & input.ModAlt) != 0
-
-	if !isMov {
+	if !input.IsMovement(key) {
 		key := key.Rune()
 		switch key {
 		case 'w', 'W':
@@ -85,21 +81,26 @@ func KeyToCmd(key input.Key) (cmd Cmd, ok bool) {
 			cmd = CmdRotateLeft
 		case 'v', 'V': // setup C + V as alternative keys
 			cmd = CmdRotateRight
-		case 32:
+		case ' ':
 			cmd = CmdDrop
 		case 'h', 'H', '?':
 			cmd = CmdHelp
+		case 'o', 'O', ',':
+			cmd = CmdOptions
 		case 229:
 			cmd = CmdMoveBoardLeft
 		case 8706:
 			cmd = CmdMoveBoardRight
+		case '1', '2', '3', '4', '5', '6', '7', '8', '9', '0':
+			cmd = CmdSelectMode
+			arg = string(key)
 		}
 		return
 	}
 
 	// key is an arrow key movement at this point
+	if input.IsAlt(key) {
 
-	if isAlt {
 		switch key.Rune() {
 		case 65:
 			cmd = CmdMoveBoardUp
@@ -124,5 +125,50 @@ func KeyToCmd(key input.Key) (cmd Cmd, ok bool) {
 		cmd = CmdMoveLeft
 	}
 
+	return
+}
+
+const (
+	CmdMenuUp     Cmd = "menu up"
+	CmdMenuDown   Cmd = "menu down"
+	CmdMenuLeft   Cmd = "menu left"
+	CmdMenuRight  Cmd = "menu right"
+	CmdMenuSelect Cmd = "menu select"
+)
+
+func KeyToMenuCmd(key input.Key) (cmd Cmd, arg string) {
+	if key == nil {
+		return
+	}
+
+	if !input.IsMovement(key) {
+		switch key.Rune() {
+		case 'w', 'W':
+			// use "WASD up" as additional rotation key to allow one-handed play
+			cmd = CmdMenuUp
+		case 's', 'S':
+			cmd = CmdMenuDown
+		case 'a', 'A':
+			cmd = CmdMenuLeft
+		case 'd', 'D':
+			cmd = CmdMenuRight
+		case 'h', 'H', '?':
+			cmd = CmdHelp
+		case 13, ' ':
+			cmd = CmdMenuSelect
+		}
+		return
+	} else {
+		switch key.Rune() {
+		case 65:
+			cmd = CmdMenuUp
+		case 66:
+			cmd = CmdMenuDown
+		case 67:
+			cmd = CmdMenuRight
+		case 68:
+			cmd = CmdMenuLeft
+		}
+	}
 	return
 }

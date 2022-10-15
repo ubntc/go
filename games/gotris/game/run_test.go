@@ -17,6 +17,10 @@ func (r *Platform) CaptureInput(context.Context) (<-chan input.Key, func(), erro
 	return nil, nil, nil
 }
 
+func (p *Platform) SetRenderingMode(string) error   { return nil }
+func (p *Platform) RenderingModes() ([]string, int) { return nil, 0 }
+func (p *Platform) RenderingInfo(string) string     { return "" }
+
 func TestLoop(t *testing.T) {
 	game.NewGame(game.TestRules, &Platform{}).Run(game.CaptureOff)
 }

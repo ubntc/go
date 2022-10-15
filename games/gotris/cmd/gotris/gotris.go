@@ -6,6 +6,7 @@ import (
 
 	"github.com/ubntc/go/games/gotris/game"
 	"github.com/ubntc/go/games/gotris/rendering"
+	"github.com/ubntc/go/games/gotris/rendering/modes"
 	"github.com/ubntc/go/games/gotris/terminal"
 )
 
@@ -13,6 +14,7 @@ import (
 // using the independent text rendering and terminal packages.
 type Platform struct {
 	terminal.Terminal
+	modeMan *modes.ModeManager
 }
 
 var DEBUG = os.Getenv("DEBUG") != ""
@@ -35,7 +37,23 @@ func (p *Platform) RenderMessage(text string) {
 	}
 }
 
+func (p *Platform) SetRenderingMode(mode string) error {
+	p.modeMan.SetModeByName(mode)
+	return nil
+}
+
+func (p *Platform) RenderingModes() (names []string, currentMode int) {
+	return p.modeMan.ModeNames(), p.modeMan.ModeIndex()
+}
+
+func (p *Platform) RenderingInfo(name string) string {
+	return p.modeMan.ModeInfo(name)
+}
+
 func main() {
-	p := Platform{*terminal.New(os.Stdout)}
+	p := Platform{
+		*terminal.New(os.Stdout),
+		rendering.ModeMan(),
+	}
 	game.NewGame(game.DefaultRules, &p).Run(game.CaptureOn)
 }

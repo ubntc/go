@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,9 +16,12 @@ import (
 type Game struct {
 	Rules
 
-	Steps   int
-	Score   int
-	Speed   time.Duration
+	Steps int
+	Score int
+	Speed time.Duration
+
+	GameOverScreenDuration time.Duration
+
 	Message map[string]interface{}
 
 	CurrentTile *Tile
@@ -36,6 +40,7 @@ func NewGame(rules Rules, platform Platform) *Game {
 		Board:    make(geometry.PointMap),
 		Speed:    rules.TickTime,
 		platform: platform,
+		BoardPos: Dim{8, 0},
 	}
 	switch g.Seed {
 	case SeedRandom:
@@ -205,7 +210,40 @@ func (g *Game) Dump() {
 	fmt.Println("NextTile", g.NextTile)
 }
 
-func (g *Game) RunCommand(cmd Cmd) error {
+func (g *Game) showOptions() {
+	for {
+		names, idx := g.platform.RenderingModes()
+		var infos []string
+		for _, name := range names {
+			infos = append(infos, g.platform.RenderingInfo(name))
+		}
+
+		key := g.ShowScreen(screens.OptionScreen.Menu(names, infos, names[idx]), 0)
+
+		switch cmd, _ := KeyToMenuCmd(key); cmd {
+		case CmdEmpty, CmdMenuSelect:
+			return
+		case CmdMenuDown, CmdMenuRight:
+			idx = (idx + 1) % len(names)
+		case CmdMenuUp, CmdMenuLeft:
+			idx = (idx + len(names) - 1) % len(names)
+		}
+		g.platform.SetRenderingMode(names[idx])
+	}
+}
+
+func (g *Game) setRenderingMode(arg string) {
+	names, _ := g.platform.RenderingModes()
+	idx, _ := strconv.Atoi(arg)
+	idx -= 1
+	if idx >= len(names) {
+		// ignore too high mode change requests
+		return
+	}
+	g.platform.SetRenderingMode(names[idx])
+}
+
+func (g *Game) RunCommand(cmd Cmd, arg string) error {
 	if dir := cmd.ToDir(); dir != geometry.DirUnkown {
 		return g.Move(g.CurrentTile, dir)
 	}
@@ -218,6 +256,10 @@ func (g *Game) RunCommand(cmd Cmd) error {
 		g.Advance()
 	case CmdHelp:
 		g.ShowScreen(screens.Controls, 0)
+	case CmdOptions:
+		g.showOptions()
+	case CmdSelectMode:
+		g.setRenderingMode(arg)
 	case CmdMoveBoardLeft:
 		if g.BoardPos.Width > 1 {
 			g.BoardPos.Width -= 1

@@ -2,6 +2,7 @@ package game
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -25,8 +26,6 @@ func (g *Game) Run(capture Capturing) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var gameOverTimeout time.Duration
-
 	// do not capture input during tests
 	if capture {
 		ch, restore, err := g.platform.CaptureInput(ctx)
@@ -35,37 +34,68 @@ func (g *Game) Run(capture Capturing) error {
 		}
 		defer restore()
 		g.input = ch
-		gameOverTimeout = time.Second * 5
+		g.GameOverScreenDuration = time.Second * 5
 	}
 
-	// title screen loop
-	for {
-		key := g.ShowScreen(screens.WelcomeScreen, 0)
-		if cmd, ok := KeyToCmd(key); ok && cmd == CmdHelp {
-			g.ShowScreen(screens.Controls, 0)
-			continue
-		}
-		break
-	}
-
-	if err := g.Loop(ctx); err != nil {
-		g.ShowScreen(screens.GameOver, gameOverTimeout)
-	}
-
-	// redraw the game to show the last Game state after the GameOver screen
-	g.platform.Render(g)
+	g.MainLoop(ctx)
 
 	return nil
 }
 
-func (g *Game) Loop(ctx context.Context) error {
+func (g *Game) MainLoop(ctx context.Context) {
+	// redraw the game to show the last Game state after any previous screen
+	defer g.platform.Render(g)
+
+	idx := 0
+	options := []string{screens.START, screens.OPTIONS, screens.CONTROLS, screens.QUIT}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		key := g.ShowScreen(screens.WelcomeScreen.Menu(options, nil, options[idx]), 0)
+		cmd, _ := KeyToMenuCmd(key)
+		switch cmd {
+		case CmdHelp:
+			g.ShowScreen(screens.Controls, 0)
+		case CmdMenuDown, CmdMenuRight:
+			idx = (idx + 1) % len(options)
+		case CmdMenuUp, CmdMenuLeft:
+			idx = (idx + len(options) - 1) % len(options)
+		case CmdMenuSelect:
+			switch options[idx] {
+			case screens.START:
+				if err := g.GameLoop(ctx); err != nil {
+					g.ShowScreen(screens.GameOver, g.GameOverScreenDuration)
+				}
+			case screens.OPTIONS:
+				g.showOptions()
+			case screens.CONTROLS:
+				g.ShowScreen(screens.Controls, 0)
+			case screens.QUIT:
+				return
+			}
+		case CmdEmpty, CmdQuit:
+			return
+		}
+	}
+}
+
+func (g *Game) GameLoop(ctx context.Context) error {
 	var lastErr error
+	var msg string
 	ticker := time.NewTicker(g.TickTime)
 	defer ticker.Stop()
 	for {
 		g.platform.Render(g)
 		if lastErr != nil {
-			g.platform.RenderMessage(lastErr.Error())
+			msg = lastErr.Error()
+		}
+		if msg != "" {
+			g.platform.RenderMessage(msg)
 		}
 
 		select {
@@ -75,8 +105,10 @@ func (g *Game) Loop(ctx context.Context) error {
 			if !more {
 				return nil
 			}
-			if cmd, ok := KeyToCmd(key); ok {
-				lastErr = g.RunCommand(cmd)
+			msg = fmt.Sprintf("key(%v, %v, %v)", key.Mod(), key.Rune(), key.Runes())
+			if cmd, arg := KeyToCmd(key); cmd != CmdEmpty {
+				msg += fmt.Sprintf(", cmd: %s, arg:%s", cmd, arg)
+				lastErr = g.RunCommand(cmd, arg)
 			}
 		case <-ticker.C:
 			ticker.Reset(time.Duration(g.Speed))

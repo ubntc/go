@@ -111,3 +111,8 @@ Therefore, here is my journey of things implemented.
   1. Some core method renaming and signature changes gave some ideas for new features
   1. Adding platform feature to print (debug) messages in a nice place
   1. Fixed broken tests that did not respect the new way of input handling
+  1. Changed frameArts to be more usable and exchangeable
+  1. Added Options menu with render options
+  1. Added in-game rendermode switch using key 1 to 9
+  1. Move static modes code to a mode manager
+  1. Added awesome menu system and refactored screen drawing system
