@@ -20,8 +20,6 @@ const (
 
 var Tiles = []struct {
 	Typ Typ
-	// Block defines a single block of a tile
-	Block string
 	// Drawings defines how the tile is drawn using a small DSL:
 	//  'x' = draw + move right
 	//  'c' = draw + move right + use as center point
@@ -29,27 +27,22 @@ var Tiles = []struct {
 	//  ',' = next row
 	Drawings []string
 }{
-	// All colors, orientations, and center blocks for 7 lines of code! 🤯
-	{TypB, "🟫", []string{"xc,xx", "xc,xx", "xc,xx", "xc,xx"}},
-	{TypI, "🟨", []string{"x,c,x,x", "xcxx", "x,x,c,x", "xxcx"}},
-	{TypL, "🟥", []string{"x,c,xx", "xcx,x", "xx, c, x", "  x,xcx"}},
-	{TypJ, "🟧", []string{" x, c,xx", "x,xcx", "xx,c,x", "xcx,  x"}},
-	{TypT, "🟩", []string{"xcx, x", " x,xc, x", " x,xcx", "x,cx,x"}},
-	{TypS, "🟦", []string{" cx,xx", "x,xc, x", " xx,xc", "x,cx, x"}},
-	{TypZ, "🟪", []string{"xc, xx", " x,xc,x", "xx, cx", " x,cx,x"}},
+	// All orientations and center blocks in 7 lines of code! 🤯
+	{TypB, []string{"xc,xx", "xc,xx", "xc,xx", "xc,xx"}},
+	{TypI, []string{"x,c,x,x", "xcxx", "x,x,c,x", "xxcx"}},
+	{TypL, []string{"x,c,xx", "xcx,x", "xx, c, x", "  x,xcx"}},
+	{TypJ, []string{" x, c,xx", "x,xcx", "xx,c,x", "xcx,  x"}},
+	{TypT, []string{"xcx, x", " x,xc, x", " x,xcx", "x,cx,x"}},
+	{TypS, []string{" cx,xx", "x,xc, x", " xx,xc", "x,cx, x"}},
+	{TypZ, []string{"xc, xx", " x,xc,x", "xx, cx", " x,cx,x"}},
 }
 
-var (
-	// Drawings by type
-	Drawings = make(map[Typ][]string, len(Tiles))
-	// Blocks by type
-	Blocks = make(map[Typ]string, len(Tiles))
-)
+// Drawings by type
+var Drawings = make(map[Typ][]string, len(Tiles))
 
 func init() {
 	for _, spec := range Tiles {
 		Drawings[spec.Typ] = spec.Drawings
-		Blocks[spec.Typ] = spec.Block
 	}
 }
 
@@ -158,5 +151,5 @@ func PointsForType(typ Typ, orientation geometry.Dir) ([]geometry.Point, geometr
 }
 
 func MergeTile(t *Tile, blocks geometry.PointMap) {
-	blocks.SetAll(t.Points(), Blocks[t.Typ()])
+	blocks.SetAll(t.Points(), string(t.Typ()))
 }
