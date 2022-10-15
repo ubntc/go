@@ -7,9 +7,18 @@ import (
 
 	"github.com/ubntc/go/games/gotris/game"
 	"github.com/ubntc/go/games/gotris/game/geometry"
+	"github.com/ubntc/go/games/gotris/rendering/arts"
+	"github.com/ubntc/go/games/gotris/rendering/modes"
 )
 
+var modeMan = modes.NewModeManager()
+
+func art() arts.FrameArt          { return modeMan.Mode() }
+func ch() *arts.Characters        { return modeMan.Mode().Art() }
+func ModeMan() *modes.ModeManager { return modeMan }
+
 func Render(g *game.Game) (rows []string) {
+	ch := ch()
 	var (
 		scoreVal = Pad(fmt.Sprintf("%d", g.Score), g.PreviewSize.Width)
 		speedVal = Pad(fmt.Sprintf("%d", g.Speed/time.Millisecond), g.PreviewSize.Width)
@@ -18,9 +27,9 @@ func Render(g *game.Game) (rows []string) {
 		// pw = g.PreviewSize.Width
 
 		board   = Frame(RenderBoard(g), bw)
-		preview = Prefix("  ", Title("ＮＥＸＴ", RenderPreview(g)))
-		score   = Prefix("  ", Title("ＳＣＯＲＥ", []string{"", scoreVal}))
-		level   = Prefix("  ", Title("ＬＥＶＥＬ", []string{"", speedVal}))
+		preview = Prefix(ch.Space, Title("NEXT", RenderPreview(g)))
+		score   = Prefix(ch.Space, Title("SCORE", []string{"", scoreVal}))
+		level   = Prefix(ch.Space, Title("LEVEL", []string{"", speedVal}))
 		info    = []string{""}
 
 		res = make([]string, 0, len(board))
@@ -55,7 +64,7 @@ func Render(g *game.Game) (rows []string) {
 }
 
 func Title(title string, content []string) []string {
-	return append([]string{title}, content...)
+	return append([]string{art().TextToBlock(title)}, content...)
 }
 
 func Pad(val string, width int) string {
@@ -76,7 +85,7 @@ func Prefix(prefix string, rows []string) []string {
 func RenderPreview(g *game.Game) []string {
 	blocks := make(geometry.PointMap)
 	points := geometry.OffsetPointsXY(g.NextTile.Points(), 1, 2)
-	blocks.SetAll(points, game.Blocks[g.NextTile.Typ()])
+	blocks.SetAll(points, string(g.NextTile.Typ()))
 	return RenderBlocks(blocks, g.PreviewSize.Width, g.PreviewSize.Height)
 }
 
@@ -87,108 +96,34 @@ func RenderBoard(g *game.Game) (rows []string) {
 }
 
 func RenderBlocks(blocks geometry.PointMap, w, h int) (rows []string) {
+	ch := art().Art()
 	for y := h - 1; y >= 0; y-- {
 		var row []string
 		for x := 0; x < w; x++ {
 			p := geometry.Point{X: x, Y: y}
-			color, ok := blocks[p]
-			if !ok {
-				color = BoxM
+			name, ok := blocks[p]
+			value := ch.BoxMidC
+			if ok {
+				value = arts.BlockToString(name, ch.TileCharacters)
 			}
-			row = append(row, color)
+			row = append(row, value)
 		}
 		rows = append(rows, strings.Join(row, ""))
 	}
 	return
 }
 
-var (
-	BoxTL, BoxT, BoxTR       = Row("┌一┐") // Top
-	BoxL, BoxM, BoxR         = Row("│　│") // Mid
-	BoxGndL, BoxGnd, BoxGndR = Row("│￣│") // Ground
-	BoxBL, BoxB, BoxBR       = Row("└一┘") // Bottom
-
-	BoxInfoTL, BoxInfoT, BoxInfoTR = Row("　﹏　") // ﹏﹏﹏﹏
-	BoxInfoL, BoxInfoM, BoxInfoR   = Row("　　　") // ＴＥＸＴ
-	BoxInfoBL, BoxInfoB, BoxInfoBR = Row("　﹋　") // ﹋﹋﹋﹋
-
-	// ・一一一一一・ . 　＿＿＿＿＿　 . 　＿＿＿＿＿
-	// ｜　　　　　｜ . ｜　　　　　｜ . ｜　　　　　｜
-	// ｜　　🟩　　｜ . ｜　　🟩　　｜ . ｜　　🟩　　｜
-	// ｜　🟩🟩🟩　｜ . ｜　🟩🟩🟩　｜ . ｜　🟩🟩🟩　｜
-	// ｜　　　　　｜ . ｜　　　　　｜ . ｜　　　　　｜
-	// ｜￣￣￣￣￣｜ . ｜￣￣￣￣￣｜ . ｜⬛️⬛️⬛️⬛️⬛️｜
-	// ・一一一一一・ . 　￣￣￣￣￣　 . 　￣￣￣￣￣
-	//
-	// ╒＝＝＝＝╕ . ╒－－－－╕ . ┌一一一一┐
-	// │　　　　│ . │　　　　│ . │　　　　│
-	// │　🟩🟩　│ . │　🟩🟩　│ . │　🟩🟩　│
-	// │　　　　│ . │　　　　│ . │　　　　│
-	// │￣￣￣￣│ . │￣￣￣￣│ . │￣￣￣￣│
-	// ╘＝＝＝＝╛ . ╘－－－－╛ . └一一一一┘
-)
-
-func Row(str string) (l, c, r string) {
-	lcr := strings.Split(str, "")
-	if len(lcr) != 3 {
-		panic("bad box setup")
-	}
-	return lcr[0], lcr[1], lcr[2]
-}
-
-var (
-	// blockScore    = "ＳＣＯＲＥ"
-	// blockSpeed    = "ＳＰＥＥＤ"
-	// blockLevel    = "ＬＥＶＥＬ"
-	// blockGameOver = "ＧＡＭＥ　ＯＶＥＲ"
-	// blockGotris   = "ＧＯＴＲＩＳ"
-
-	BlockGotrisSmall = []string{
-		" ╔═╗╔═╗╔╦╗╦═╗╦╔═╗ ",
-		" ║ ╦║ ║ ║ ╠╦╝║╚═╗ ",
-		" ╚═╝╚═╝ ╩ ╩╚═╩╚═╝ ",
-	}
-
-	TextAbc = "0123456789" + "`" +
-		` -+*=/\.,:;!?$%&@#'"<>()[]{}^~_|` +
-		`ABCDEFGHIJKLMNOPQRSTUVWXYZ` +
-		`abcdefghijklmnopqrstuvwxyz`
-
-	// see: https://www.w3.org/TR/xml-entity-names/023.html
-	// and: https://codepoints.net/halfwidth_and_fullwidth_forms
-
-	BlockAbc = strings.Split(`０１２３４５６７８９`+"｀"+
-		`　－＋*＝／＼．，：；！？＄％＆＠＃＇＂＜＞（）［］｛｝＾～＿｜`+
-		`ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ`+
-		`ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ`,
-		"")
-)
-
-func TextToBlock(str string) string {
-	res := make([]string, len(str))
-	for i, r := range str {
-		abcIndex := strings.IndexRune(TextAbc, r)
-		res[i] = BlockAbc[abcIndex]
-	}
-	return strings.Join(res, "")
-}
-
-const (
-	FullWidthSpace   = "　"
-	NormalWidthSpace = " "
-	HalfWidthSpace   = "ﾠ"
-)
-
 func Frame(rows []string, w int) (frame []string) {
+	ch := art().Art()
 	frame = make([]string, 0, len(rows)+10)
 
 	for _, row := range rows {
-		frame = append(frame, BoxL+row+BoxR)
+		frame = append(frame, ch.BoxMidL+row+ch.BoxMidR)
 	}
 
-	top := BoxTL + strings.Repeat(BoxT, w) + BoxTR
-	gnd := BoxGndL + strings.Repeat(BoxGnd, w) + BoxGndR
-	bot := BoxBL + strings.Repeat(BoxB, w) + BoxBR
+	top := ch.BoxTopL + strings.Repeat(ch.BoxTopC, w) + ch.BoxTopR
+	gnd := ch.BoxGndL + strings.Repeat(ch.BoxGndC, w) + ch.BoxGndR
+	bot := ch.BoxBotL + strings.Repeat(ch.BoxBotC, w) + ch.BoxBotR
 
 	frame = append([]string{top}, append(frame, gnd, bot)...)
 
