@@ -6,6 +6,41 @@
  FULLWIDTH LATIN SMALL LETTER
  ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ
 
+
+  ▣▤▥▦▧▨▩
+  ◰◱◲◳
+  ◻◼◽◾
+  ◧ ◨ ◫
+  ₪₪₪₪
+  ₪₪₪₪
+  ⅢⅢⅢⅢ
+  ⅢⅢⅢⅢ
+  ∎∎∎
+  ∎∎∎
+  ⏍⏍⏍
+  ⏍⏍⏍
+  ɾɿ
+  🀠🀠🀠
+  🀠🀠🀠
+
+  ⿴⿴⿴
+  ⿴⿴⿴
+
+  ✴️✴️✳️♊️🈂️💟✅
+  ⏹⏺🔽⏸🔼◀️▶️⏪⏩⏫⏬
+  🟨🟧🟥🟪🟦🟫🟩⬜️⬛️🔲
+
+  |͟͞| <-- combining macrons
+
+    ⃞  ⃞  ⃞  <-- uses enclosing square (iTerm only)
+      ⃞
+
+  ䷀䷀䷀䷀
+  ䷀䷀䷀䷀
+
+  ⏹⏹⏹  <-- looks nice, but does not allow colors + terminal only
+  ⏹
+
  「﹋﹋﹋﹋　.
  　ＮＥＸＴ　.
  　﹏﹏﹏﹏」.
@@ -108,5 +143,48 @@
  ▝
  ▙ ▟▖▝▛ ▗▙
  ▘
+    ╔═╗╔═╗    ╔═╗┌─┐ ┌─┐
+    ║ ║║ ╚═╗  ║ ║│ │ │ │
+  ╔═╝ ║║ ╔═╝╔═╝ ║│ └─┧ │
+  ╚═══╝╚═╝  ╚═══╝└───┖─┘
+
+    ╔═╦═╗ ╔═╗
+    ║ ║ ╚═╣ ║
+  ╔═╝ ║ ╔═╣ ╠═╗
+  ╚═══╬═╝ ╚═╬═╣
+      ╚═════╩═╝
+
+ ╚ ╗ ╔ ╝ ║ ╣ ╠ ═ ╩ ╦ ╬
+
+          ╔═══╗
+ ╔═══╦═══╗║   ║
+ ║   ║   ║╚═══╝
+ ╠═══╬═══╣╔═══╦═══╦═══╦═══╗
+ ║   ║   ║║   ║   ║   ║   ║
+ ╚═══╩═══╝╚═══╩═══╩═══╩═══╝
+
+  ╔══╗   ╔══╗
+  ║  ╚══╗║  ║
+  ║  ╔══╝║  ║
+  ║  ║╔══╝  ║
+  ╚══╝╚═════╝
+
+      ⣿⣿
+      ⣿⣿
+    ⣿⣿⣿⣿⣿⣿
+    ⣿⣿⣿⣿⣿⣿
+
+    ⡏⠉⢹
+    ⡇ ⢸
+    ⣇⣀⣸
+   ⣏⣉⣉⣉⣉⣹
+
 
 ```
+
+## Sources
+
+https://codepoints.net/yijing_hexagram_symbols
+https://codepoints.net/tai_xuan_jing_symbols
+https://codepoints.net/combining_diacritical_marks_for_symbols
+https://codepoints.net/ideographic_description_characters
