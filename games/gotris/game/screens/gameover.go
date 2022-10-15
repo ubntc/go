@@ -1,9 +1,11 @@
 package screens
 
-const GameOver = `
+const gameover = `
 
- ╔═╗╔═╗╔╦╗╔═╗  ╔═╗╦  ╦╔═╗╦═╗  ╦
- ║ ╦╠═╣║║║║╣   ║ ║╚╗╔╝║╣ ╠╦╝  ║
- ╚═╝╩ ╩╩ ╩╚═╝  ╚═╝ ╚╝ ╚═╝╩╚═  o
+⿴ ⿴ ⿴  ╔═╗╔═╗╔╦╗╔═╗  ╔═╗╦  ╦╔═╗╦═╗  ╦  ⿴ ⿴ ⿴
+⿴ ⿴ ⿴  ║ ╦╠═╣║║║║╣   ║ ║╚╗╔╝║╣ ╠╦╝  ║  ⿴ ⿴ ⿴
+⿴ ⿴ ⿴  ╚═╝╩ ╩╩ ╩╚═╝  ╚═╝ ╚╝ ╚═╝╩╚═  o  ⿴ ⿴ ⿴
 
 `
+
+var GameOver = Colorize(ColorizeBetween(gameover, "⿴  ", "  ⿴", Bold_Yellow), "⿴", Red)
