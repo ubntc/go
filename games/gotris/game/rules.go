@@ -33,7 +33,7 @@ var (
 	}
 
 	DefaultRules = Rules{
-		BoardSize:   Dim{8, 16},
+		BoardSize:   Dim{10, 20},
 		TickTime:    time.Second,
 		SpeedStep:   5 * time.Millisecond,
 		MaxSteps:    0,
