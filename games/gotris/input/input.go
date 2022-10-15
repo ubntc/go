@@ -23,6 +23,14 @@ type Key interface {
 	Runes() []rune
 }
 
+func IsMovement(key Key) bool {
+	return (key.Mod() & ModMove) != 0
+}
+
+func IsAlt(key Key) bool {
+	return (key.Mod() & ModAlt) != 0
+}
+
 // AwaitInput waits for user input or a given timeout.
 func AwaitInput(input <-chan Key, timeout time.Duration) (key Key) {
 	switch {
