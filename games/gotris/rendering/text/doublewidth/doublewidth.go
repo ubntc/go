@@ -3,7 +3,7 @@ package doublewidth
 import (
 	"strings"
 
-	"github.com/ubntc/go/games/gotris/rendering/arts"
+	"github.com/ubntc/go/games/gotris/rendering/text/arts"
 )
 
 type doublewidth struct{ arts.Characters }

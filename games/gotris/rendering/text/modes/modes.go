@@ -2,9 +2,9 @@
 package modes
 
 import (
-	"github.com/ubntc/go/games/gotris/rendering/arts"
-	"github.com/ubntc/go/games/gotris/rendering/doublewidth"
-	"github.com/ubntc/go/games/gotris/rendering/fullwidth"
+	"github.com/ubntc/go/games/gotris/rendering/text/arts"
+	"github.com/ubntc/go/games/gotris/rendering/text/doublewidth"
+	"github.com/ubntc/go/games/gotris/rendering/text/fullwidth"
 )
 
 type ModeManager struct {

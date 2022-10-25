@@ -1,4 +1,4 @@
-package rendering
+package text
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 
 	"github.com/ubntc/go/games/gotris/game"
 	"github.com/ubntc/go/games/gotris/game/geometry"
-	"github.com/ubntc/go/games/gotris/rendering/arts"
-	"github.com/ubntc/go/games/gotris/rendering/modes"
+	"github.com/ubntc/go/games/gotris/rendering/text/arts"
+	"github.com/ubntc/go/games/gotris/rendering/text/modes"
 )
 
 var modeMan = modes.NewModeManager()

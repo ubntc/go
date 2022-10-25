@@ -3,7 +3,7 @@ package fullwidth_test
 import (
 	"testing"
 
-	"github.com/ubntc/go/games/gotris/rendering/fullwidth"
+	"github.com/ubntc/go/games/gotris/rendering/text/fullwidth"
 )
 
 func TestFullwidthTextTranslation(t *testing.T) {

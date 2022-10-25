@@ -3,7 +3,7 @@ package fullwidth
 import (
 	"strings"
 
-	"github.com/ubntc/go/games/gotris/rendering/arts"
+	"github.com/ubntc/go/games/gotris/rendering/text/arts"
 )
 
 const Name = "Full-Width"

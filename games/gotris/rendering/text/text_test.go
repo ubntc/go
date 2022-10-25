@@ -1,4 +1,4 @@
-package rendering
+package text
 
 import (
 	"strings"
@@ -12,6 +12,7 @@ func TestRendering(t *testing.T) {
 	assert := assert.New(t)
 
 	g := game.NewGame(game.TestRules, nil)
+	g.CaptureInput = false
 	step := 0
 	for {
 		step += 1

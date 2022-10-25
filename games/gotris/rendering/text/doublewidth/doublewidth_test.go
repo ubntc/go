@@ -3,7 +3,7 @@ package doublewidth_test
 import (
 	"testing"
 
-	"github.com/ubntc/go/games/gotris/rendering/doublewidth"
+	"github.com/ubntc/go/games/gotris/rendering/text/doublewidth"
 )
 
 func TestTextToBlock(t *testing.T) {
