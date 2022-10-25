@@ -1,59 +1,36 @@
 package main
 
 import (
-	"os"
-	"strings"
+	"context"
+	"flag"
 
 	"github.com/ubntc/go/games/gotris/game"
-	"github.com/ubntc/go/games/gotris/rendering"
-	"github.com/ubntc/go/games/gotris/rendering/modes"
-	"github.com/ubntc/go/games/gotris/terminal"
+	"github.com/ubntc/go/games/gotris/platform/fyne"
+	"github.com/ubntc/go/games/gotris/platform/text"
 )
 
-// Platform implements game rendering and input handling for the game,
-// using the independent text rendering and terminal packages.
-type Platform struct {
-	terminal.Terminal
-	modeMan *modes.ModeManager
-}
-
-var DEBUG = os.Getenv("DEBUG") != ""
-
-func (p *Platform) Render(g *game.Game) {
-	p.Clear()
-	p.Print(strings.Join(rendering.Render(g), "\r\n"))
-}
-
-func (p *Platform) RenderScreen(text string) {
-	p.Clear()
-	lines := strings.Split(text, "\n")
-	p.Print(strings.Join(lines, "\r\n    "))
-}
-
-func (p *Platform) RenderMessage(text string) {
-	if DEBUG {
-		lines := strings.Split("\n"+text, "\n")
-		p.Print(strings.Join(lines, "\r\n"))
-	}
-}
-
-func (p *Platform) SetRenderingMode(mode string) error {
-	p.modeMan.SetModeByName(mode)
-	return nil
-}
-
-func (p *Platform) RenderingModes() (names []string, currentMode int) {
-	return p.modeMan.ModeNames(), p.modeMan.ModeIndex()
-}
-
-func (p *Platform) RenderingInfo(name string) string {
-	return p.modeMan.ModeInfo(name)
-}
+var platform = flag.String("platform", "fyne", "name of the game platform to use")
 
 func main() {
-	p := Platform{
-		*terminal.New(os.Stdout),
-		rendering.ModeMan(),
+	flag.Parse()
+	var p game.Platform
+	switch *platform {
+	case "fyne":
+		p = fyne.NewPlatform()
+	case "text":
+		p = text.NewPlatform()
 	}
-	game.NewGame(game.DefaultRules, &p).Run(game.CaptureOn)
+	g := game.NewGame(game.DefaultRules, p)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// start the game loop in the background
+	go func() {
+		g.Run(ctx)
+		cancel()
+	}()
+
+	// handover main thead to the platform
+	p.Run(ctx)
 }
