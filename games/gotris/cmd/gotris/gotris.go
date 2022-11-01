@@ -9,7 +9,7 @@ import (
 	"github.com/ubntc/go/games/gotris/platform/text"
 )
 
-var platform = flag.String("platform", "fyne", "name of the game platform to use")
+var platform = flag.String("platform", "text", "name of the game platform to use")
 
 func main() {
 	flag.Parse()

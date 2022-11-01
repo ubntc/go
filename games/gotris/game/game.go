@@ -3,9 +3,11 @@ package game
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
+	cmd "github.com/ubntc/go/games/gotris/game/controls"
 	"github.com/ubntc/go/games/gotris/game/geometry"
 	"github.com/ubntc/go/games/gotris/game/scenes"
 	"github.com/ubntc/go/games/gotris/input"
@@ -212,53 +214,43 @@ func (g *Game) Dump() {
 	fmt.Println("NextTile", g.NextTile)
 }
 
-func (g *Game) RunCommand(cmd Cmd, arg string) error {
-	if dir := cmd.ToDir(); dir != geometry.DirUnkown {
+func (g *Game) RunCommand(command cmd.Cmd, arg string) error {
+	if dir := command.ToDir(); dir != geometry.DirUnkown {
 		return g.Move(g.CurrentTile, dir)
 	}
-	if spin := cmd.ToSpin(); spin != geometry.SpinUnknown {
+	if spin := command.ToSpin(); spin != geometry.SpinUnknown {
 		return g.RotateAndMove(g.CurrentTile, spin)
 	}
-	switch cmd {
-	case CmdDrop:
+	switch command {
+	case cmd.Drop:
 		g.Drop(g.CurrentTile)
 		g.Advance()
-	case CmdHelp:
-		g.showScreen(scenes.Controls, 0)
-	case CmdOptions:
+	case cmd.Help:
+		g.showHelp()
+	case cmd.Options:
 		g.showOptions()
-	case CmdSelectMode:
-		g.setRenderingMode(arg)
-	case CmdMoveBoardLeft:
+	case cmd.MoveBoardLeft:
 		if g.BoardPos.Width > 1 {
 			g.BoardPos.Width -= 1
 		}
-	case CmdMoveBoardRight:
+	case cmd.MoveBoardRight:
 		g.BoardPos.Width += 1
-	case CmdMoveBoardUp:
+	case cmd.MoveBoardUp:
 		if g.BoardPos.Height > 1 {
 			g.BoardPos.Height -= 1
 		}
-	case CmdMoveBoardDown:
+	case cmd.MoveBoardDown:
 		g.BoardPos.Height += 1
+	case cmd.SelectMode:
+		i, _ := strconv.Atoi(arg)
+		g.platform.Options().Set(i - 1)
 	default:
-		return fmt.Errorf("unknown command: %s", cmd)
+		return fmt.Errorf("unknown command: %s", command)
 	}
 	return nil
 }
 
-func (g *Game) showScreen(name string, timeout time.Duration) input.Key {
-	var scn scenes.Scene
-	switch name {
-	case scenes.Controls, scenes.GameOver:
-		scn = scenes.Scene{Name: name}
-	default:
-		panic("unknown scene: " + name)
-	}
-	return g.ShowScene(&scn, timeout)
-}
-
-func (g *Game) ShowScene(scene *scenes.Scene, timeout time.Duration) input.Key {
+func (g *Game) ShowScene(scene scenes.Scene, timeout time.Duration) input.Key {
 	g.platform.RenderScene(scene)
 	return input.AwaitInput(g.input, timeout)
 }

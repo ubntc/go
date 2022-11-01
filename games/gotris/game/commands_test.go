@@ -3,7 +3,7 @@ package game_test
 import (
 	"testing"
 
-	"github.com/ubntc/go/games/gotris/game"
+	cmd "github.com/ubntc/go/games/gotris/game/controls"
 	"github.com/ubntc/go/games/gotris/input"
 )
 
@@ -20,14 +20,14 @@ func TestKeyToCmd(t *testing.T) {
 	tests := []struct {
 		name    string
 		key     K
-		wantCmd game.Cmd
+		wantCmd cmd.Cmd
 		wantArg string
 	}{
-		{"drop", K{0, ' '}, game.CmdDrop, ""},
+		{"drop", K{0, ' '}, cmd.Drop, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCmd, gotOk := game.KeyToCmd(&tt.key)
+			gotCmd, gotOk := cmd.KeyToCmd(&tt.key)
 			if gotCmd != tt.wantCmd {
 				t.Errorf("KeyToCmd() gotCmd = %v, want %v", gotCmd, tt.wantCmd)
 			}

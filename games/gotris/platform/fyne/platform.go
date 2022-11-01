@@ -40,8 +40,12 @@ func (p *Platform) Run(ctx context.Context) {
 	p.wnd.ShowAndRun()
 }
 
-func (p *Platform) RenderMessage(text string) {
+func (p *Platform) ShowMessage(text string) {
 	echo(text)
+}
+
+func (p *Platform) Options() scenes.Options {
+	return nil
 }
 
 func (p *Platform) Render(g *game.Game) {
@@ -53,8 +57,8 @@ func (p *Platform) Render(g *game.Game) {
 	echo("Score", g.Score)
 }
 
-func (p *Platform) RenderScene(scene *scenes.Scene) {
-	content := canvas.NewText(scene.Name, WHITE)
+func (p *Platform) RenderScene(scene scenes.Scene) {
+	content := canvas.NewText(scene.Name(), WHITE)
 	p.pix.SetContent(content)
 	echo(scene)
 }

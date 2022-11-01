@@ -13,13 +13,25 @@ type Platform interface {
 	// to indicate that capturing is not possiible.
 	CaptureInput(ctx context.Context) (input <-chan input.Key, stopCapture func(), err error)
 
-	Render(game *Game)
-	RenderScene(screen *scenes.Scene)
-	RenderMessage(message string)
+	// ShowMessage shows a generic info message to the user.
+	ShowMessage(message string)
 
-	RenderingModes() (names []string, currentMode int)
-	RenderingInfo(name string) string
-	SetRenderingMode(mode string) error
+	// Render is called by the game when the game state updates. An implematation of this
+	// should update it's own presentation state based on the changes inside the game.
+	Render(game *Game)
+
+	// RenderScene is called by the game to render an specific gamer Scene, with specific
+	// options, descriptions, and a given current selection. There is not feedback channel.
+	// The game must be informed via regular input events, which the game will wait for after
+	// calling RenderScene.
+	RenderScene(screen scenes.Scene)
+
+	// Options returns a scene with options that can be managed by the platform.
+	Options() scenes.Options
+
+	// RenderingModes() (names []string, currentMode int)
+	// SetRenderingMode(mode string) error
+	// RenderingInfo(name string) string
 
 	// Run is a blocking call to start the platform.
 	// This is the last function called to handover control to the

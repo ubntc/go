@@ -23,5 +23,5 @@ func (g *Game) Run(ctx context.Context) {
 	stopCapture := g.startCapture(ctx)
 	defer stopCapture()
 
-	g.showWelcomeScreen(ctx)
+	g.showWelcome(ctx)
 }

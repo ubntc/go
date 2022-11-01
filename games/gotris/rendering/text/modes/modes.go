@@ -37,6 +37,13 @@ func (m *ModeManager) ModeNames() (names []string) {
 	return
 }
 
+func (m *ModeManager) ModeDescs() (descs []string) {
+	for _, v := range m.modes {
+		descs = append(descs, v.Art().Desc)
+	}
+	return
+}
+
 func (m *ModeManager) ModeIndexByName(name string) int {
 	for i, v := range m.modes {
 		if v.Art().Name == name {

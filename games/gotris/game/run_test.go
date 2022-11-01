@@ -12,12 +12,13 @@ import (
 
 type Platform struct{}
 
-func (r *Platform) Render(game *game.Game)          {}
-func (r *Platform) RenderScene(scene *scenes.Scene) {}
-func (r *Platform) RenderMessage(text string)       {}
+func (r *Platform) Render(game *game.Game)         {}
+func (r *Platform) RenderScene(scene scenes.Scene) {}
+func (r *Platform) ShowMessage(text string)        {}
 func (r *Platform) CaptureInput(context.Context) (<-chan input.Key, func(), error) {
 	return nil, nil, nil
 }
+func (p *Platform) Options() scenes.Options { return nil }
 
 func (p *Platform) SetRenderingMode(string) error   { return nil }
 func (p *Platform) RenderingModes() ([]string, int) { return nil, 0 }

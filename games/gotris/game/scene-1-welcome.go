@@ -2,13 +2,33 @@ package game
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	cmd "github.com/ubntc/go/games/gotris/game/controls"
 	"github.com/ubntc/go/games/gotris/game/scenes"
 )
 
-func (g *Game) showWelcomeScreen(ctx context.Context) {
-	idx := 0
+func (g *Game) handleCommonCommand(c cmd.Cmd) (quit, ok bool) {
+	switch c {
+	case cmd.Help:
+		g.showHelp()
+	case cmd.Empty, cmd.Quit:
+		quit = true
+	default:
+		return false, false
+	}
+	return quit, true
+}
+
+func hint[K any](v ...K) {
+	fmt.Printf("%v\n", v)
+	time.Sleep(time.Second)
+}
+
+func (g *Game) showWelcome(ctx context.Context) {
 	welcome := scenes.NewWelcomeMenu()
+	opts := welcome.Options()
 
 	for {
 		select {
@@ -17,31 +37,33 @@ func (g *Game) showWelcomeScreen(ctx context.Context) {
 		default:
 		}
 
-		welcome.CurrentOption = idx
 		key := g.ShowScene(welcome, 0)
-		cmd, _ := KeyToMenuCmd(key)
-		switch cmd {
-		case CmdHelp:
-			g.showScreen(scenes.Controls, 0)
-		case CmdMenuDown, CmdMenuRight:
-			idx = (idx + 1) % len(welcome.Options)
-		case CmdMenuUp, CmdMenuLeft:
-			idx = (idx + len(welcome.Options) - 1) % len(welcome.Options)
-		case CmdMenuSelect:
-			switch welcome.Options[idx] {
+		c, _ := cmd.KeyToMenuCmd(key)
+
+		if quit, ok := g.handleCommonCommand(c); ok {
+			if quit {
+				return
+			}
+			continue
+		}
+
+		if i, done, ok := cmd.HandleOptionsCmd(c, len(opts.List()), opts.Get()); ok {
+			opts.Set(i)
+			if !done {
+				continue
+			}
+			switch opts.GetName() {
 			case scenes.START:
 				if err := g.GameLoop(ctx); err != nil {
-					g.showScreen(scenes.GameOver, g.GameOverScreenDuration)
+					g.gameOver()
 				}
 			case scenes.OPTIONS:
 				g.showOptions()
 			case scenes.CONTROLS:
-				g.showScreen(scenes.Controls, 0)
+				g.showHelp()
 			case scenes.QUIT:
 				return
 			}
-		case CmdEmpty, CmdQuit:
-			return
 		}
 	}
 }

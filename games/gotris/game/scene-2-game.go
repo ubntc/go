@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	cmd "github.com/ubntc/go/games/gotris/game/controls"
 )
 
 func (g *Game) GameLoop(ctx context.Context) error {
@@ -19,7 +20,7 @@ func (g *Game) GameLoop(ctx context.Context) error {
 			msg = lastErr.Error()
 		}
 		if msg != "" {
-			g.platform.RenderMessage(msg)
+			g.platform.ShowMessage(msg)
 		}
 
 		select {
@@ -30,9 +31,9 @@ func (g *Game) GameLoop(ctx context.Context) error {
 				return nil
 			}
 			msg = fmt.Sprintf("key(%v, %v, %v)", key.Mod(), key.Rune(), key.Runes())
-			if cmd, arg := KeyToCmd(key); cmd != CmdEmpty {
-				msg += fmt.Sprintf(", cmd: %s, arg:%s", cmd, arg)
-				lastErr = g.RunCommand(cmd, arg)
+			if c, arg := cmd.KeyToCmd(key); c != cmd.Empty {
+				msg += fmt.Sprintf(", cmd: %s, arg:%s", c, arg)
+				lastErr = g.RunCommand(c, arg)
 			}
 		case <-ticker.C:
 			ticker.Reset(time.Duration(g.Speed))
