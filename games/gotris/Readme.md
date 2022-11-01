@@ -127,3 +127,5 @@ Therefore, here is my journey of things implemented.
   * moves scene loops to separate files names scene-num-name.go
   * This change went unexpectedly smooth and was done quickly. Go is really awesome for heavy code reshaping! Also putting things in subpackages and naming all magic strings from the beginning helped a  lot.
 1. Define fyne gray scale colors.
+1. Not happy with how Options are set in the platform. Refactored it again. Seems to be getting in shape now. Refactoring is still fun!
+1. Moved all scenes to separate files to see what event loop logic is actually needed to manage a scene. This led to the extraction of some reusabe handlers, such as the global key handler and the options handler. It also allowed moving out the options index logic to a central place.
