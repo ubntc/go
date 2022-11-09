@@ -47,11 +47,7 @@ func (g *Game) showWelcome(ctx context.Context) {
 			continue
 		}
 
-		if i, done, ok := cmd.HandleOptionsCmd(c, len(opts.List()), opts.Get()); ok {
-			opts.Set(i)
-			if !done {
-				continue
-			}
+		if result := cmd.HandleOptionsCmd(c, opts); result == cmd.HandleResultSelectionFinished {
 			switch opts.GetName() {
 			case scenes.START:
 				if err := g.GameLoop(ctx); err != nil {

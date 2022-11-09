@@ -72,7 +72,7 @@ func (t *Terminal) Clear() {
 		t.Print(t.ClearString())
 	case TermAppITerm:
 		// fixes flickering iTerm2
-		t.Overpaint()
+		_ = t.Overpaint()
 	default:
 		// works in VSCode term and Apple_Terminal but flickers in iTerm2
 		// best for cross-platform

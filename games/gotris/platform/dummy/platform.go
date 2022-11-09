@@ -1,4 +1,4 @@
-package fyne
+package dummy
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/ubntc/go/games/gotris/game"
+	"github.com/ubntc/go/games/gotris/game/options"
+	"github.com/ubntc/go/games/gotris/game/scenes"
 )
 
 var DEBUG = os.Getenv("DEBUG") != ""
@@ -31,19 +33,9 @@ func echo(s ...interface{}) {
 func (p *Platform) Render(g *game.Game) {
 	echo("Board", g.Board)
 	echo("Score", g.Score)
+	echo("Tile", g.CurrentTile)
 }
 
-func (p *Platform) RenderScene(text string)   { echo(text) }
-func (p *Platform) RenderMessage(text string) { echo(text) }
-
-func (p *Platform) SetRenderingMode(mode string) error {
-	return nil
-}
-
-func (p *Platform) RenderingModes() (names []string, currentMode int) {
-	return []string{"default"}, 0
-}
-
-func (p *Platform) RenderingInfo(name string) string {
-	return "default mode"
-}
+func (p *Platform) RenderScene(scene *scenes.Scene) { echo(scene.Name()) }
+func (p *Platform) ShowMessage(text string)         { echo(text) }
+func (p *Platform) Options() options.Options        { return options.NewMemStore(nil, nil) }

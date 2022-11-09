@@ -41,23 +41,22 @@ func main() {
 	i := 0
 	for {
 		select {
-		case key, more := <-input:
+		case in, more := <-input:
 			if !more {
 				return
 			}
 			if debug {
-				echo("key: ", key.Rune(), key.Mod(), key.Runes())
+				echo("key: ", in.Key(), ", flags: ", in.Flags(), ", rune: ", in.Text(), ", mov: ", in.IsMovement(), ", alt: ", in.IsAlt())
 			}
-			buf := key.Runes()
-			if len(buf) != 1 {
-				continue
-			}
-			switch key.Rune() {
+			switch in.Rune() {
+			case 'q':
+				echo("Quit")
+				return
 			case 'c':
 				t.Clear()
 				echo("Cleared")
 			case 'o':
-				t.Overpaint()
+				_ = t.Overpaint()
 				echo("Overpainted")
 			case 'x':
 				t.RunClearCommand()

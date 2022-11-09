@@ -20,10 +20,10 @@ func ModeMan() *modes.ModeManager { return modeMan }
 func Render(g *game.Game) (rows []string) {
 	ch := ch()
 	var (
-		scoreVal = Pad(fmt.Sprintf("%d", g.Score), g.PreviewSize.Width)
-		speedVal = Pad(fmt.Sprintf("%d", g.Speed/time.Millisecond), g.PreviewSize.Width)
+		scoreVal = Pad(fmt.Sprintf("%d", g.Score), g.PreviewSize.W)
+		speedVal = Pad(fmt.Sprintf("%d", g.Speed/time.Millisecond), g.PreviewSize.W)
 
-		bw = g.BoardSize.Width
+		bw = g.BoardSize.W
 		// pw = g.PreviewSize.Width
 
 		board   = Frame(RenderBoard(g), bw)
@@ -51,8 +51,8 @@ func Render(g *game.Game) (rows []string) {
 		res = append(res, row)
 	}
 
-	padTop := make([]string, g.BoardPos.Height)
-	padLeft := strings.Repeat(" ", g.BoardPos.Width)
+	padTop := make([]string, g.BoardPos.H)
+	padLeft := strings.Repeat(" ", g.BoardPos.W)
 
 	for i := range res {
 		res[i] = padLeft + res[i]
@@ -86,13 +86,13 @@ func RenderPreview(g *game.Game) []string {
 	blocks := make(geometry.PointMap)
 	points := geometry.OffsetPointsXY(g.NextTile.Points(), 1, 2)
 	blocks.SetAll(points, string(g.NextTile.Typ()))
-	return RenderBlocks(blocks, g.PreviewSize.Width, g.PreviewSize.Height)
+	return RenderBlocks(blocks, g.PreviewSize.W, g.PreviewSize.H)
 }
 
 func RenderBoard(g *game.Game) (rows []string) {
 	blocks := g.Board.Copy()
 	game.MergeTile(g.CurrentTile, blocks)
-	return RenderBlocks(blocks, g.BoardSize.Width, g.BoardSize.Height)
+	return RenderBlocks(blocks, g.BoardSize.W, g.BoardSize.H)
 }
 
 func RenderBlocks(blocks geometry.PointMap, w, h int) (rows []string) {

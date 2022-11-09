@@ -25,8 +25,8 @@ const confirmOnly = `
 `
 
 var (
-	menuKeyRows    = strings.Split(menuKeys, "\n")
-	confirmKeyRows = strings.Split(confirmOnly, "\n")
+	MenuKeyRows    = strings.Split(menuKeys, "\n")
+	ConfirmKeyRows = strings.Split(confirmOnly, "\n")
 )
 
 const MenuItemsPlaceholder = "MENU_ITEMS"
@@ -80,5 +80,5 @@ func (screen MenuScreen) Menu(names, descriptions []string, current string) stri
 }
 
 func Screen(screen string) string {
-	return NewMenuScreen(screen).menu(nil, nil, "", confirmKeyRows)
+	return NewMenuScreen(screen).menu(nil, nil, "", ConfirmKeyRows)
 }

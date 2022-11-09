@@ -26,12 +26,17 @@ func (g *Game) GameLoop(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return nil
-		case key, more := <-g.input:
+		case in, more := <-g.input:
 			if !more {
 				return nil
 			}
-			msg = fmt.Sprintf("key(%v, %v, %v)", key.Mod(), key.Rune(), key.Runes())
-			if c, arg := cmd.KeyToCmd(key); c != cmd.Empty {
+			msg = fmt.Sprintf("key(%v, %v, %v)", in.Flags(), in.Rune(), in.Rune())
+			c, arg := cmd.InputToCmd(in)
+			switch c {
+			case cmd.Quit:
+				return nil
+			case cmd.Empty:
+			default:
 				msg += fmt.Sprintf(", cmd: %s, arg:%s", c, arg)
 				lastErr = g.RunCommand(c, arg)
 			}

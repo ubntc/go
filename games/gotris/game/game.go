@@ -9,13 +9,14 @@ import (
 	"github.com/pkg/errors"
 	cmd "github.com/ubntc/go/games/gotris/game/controls"
 	"github.com/ubntc/go/games/gotris/game/geometry"
+	"github.com/ubntc/go/games/gotris/game/rules"
 	"github.com/ubntc/go/games/gotris/game/scenes"
 	"github.com/ubntc/go/games/gotris/input"
 )
 
 // Game stores the game state
 type Game struct {
-	Rules
+	rules.Rules
 
 	Steps int
 	Score int
@@ -28,26 +29,26 @@ type Game struct {
 	CurrentTile *Tile
 	NextTile    *Tile
 
-	BoardPos     Dim
+	BoardPos     geometry.Dim
 	Board        geometry.PointMap
 	CaptureInput bool
 
 	platform Platform
-	input    <-chan input.Key
+	input    <-chan *input.Input
 }
 
-func NewGame(rules Rules, platform Platform) *Game {
+func NewGame(gameRules rules.Rules, platform Platform) *Game {
 	g := &Game{
-		Rules:        rules,
+		Rules:        gameRules,
 		Board:        make(geometry.PointMap),
-		Speed:        rules.TickTime,
-		BoardPos:     Dim{8, 0},
+		Speed:        gameRules.TickTime,
+		BoardPos:     *geometry.NewDim(8, 0),
 		CaptureInput: true,
 
 		platform: platform,
 	}
 	switch g.Seed {
-	case SeedRandom:
+	case rules.SeedRandom:
 		rand.Seed(time.Now().Unix())
 	default:
 		rand.Seed(int64(g.Seed))
@@ -65,8 +66,8 @@ func (g *Game) SpawnTiles() {
 	g.NextTile = RandomTile()
 
 	// move tile to the board
-	dx := g.BoardSize.Width / 2
-	dy := g.BoardSize.Height - 1
+	dx := g.BoardSize.W / 2
+	dy := g.BoardSize.H - 1
 	t.points = geometry.OffsetPointsXY(t.points, dx, dy)
 	g.CurrentTile = t
 }
@@ -114,7 +115,7 @@ func (g *Game) ResolveTile(t *Tile) error {
 }
 
 func (g *Game) ModifyTile(t *Tile, points []geometry.Point, ori geometry.Dir, center int) error {
-	if !geometry.PointsInRange(points, g.BoardSize.Width, g.BoardSize.Height+4) {
+	if !geometry.PointsInRange(points, g.BoardSize.W, g.BoardSize.H+4) {
 		return errors.New("tile not inside screen")
 	}
 	if g.Board.ContainsAny(points) {
@@ -168,7 +169,7 @@ func (g *Game) FindLines() (lines []int) {
 	rows := make(map[int]int)
 	for p := range g.Board {
 		rows[p.Y] += 1
-		if rows[p.Y] == g.BoardSize.Width {
+		if rows[p.Y] == g.BoardSize.W {
 			lines = append(lines, p.Y)
 		}
 	}
@@ -192,7 +193,7 @@ func (g *Game) ScoreLines(lines []int) int {
 }
 
 func (g *Game) RemoveLines(lines []int) {
-	points := g.Board.PointsList(g.BoardSize.Width, g.BoardSize.Height)
+	points := g.Board.PointsList(g.BoardSize.W, g.BoardSize.H)
 	for _, y := range lines {
 		fmt.Println("remove", y)
 		// mark line to be deleted
@@ -230,17 +231,17 @@ func (g *Game) RunCommand(command cmd.Cmd, arg string) error {
 	case cmd.Options:
 		g.showOptions()
 	case cmd.MoveBoardLeft:
-		if g.BoardPos.Width > 1 {
-			g.BoardPos.Width -= 1
+		if g.BoardPos.W > 1 {
+			g.BoardPos.W -= 1
 		}
 	case cmd.MoveBoardRight:
-		g.BoardPos.Width += 1
+		g.BoardPos.W += 1
 	case cmd.MoveBoardUp:
-		if g.BoardPos.Height > 1 {
-			g.BoardPos.Height -= 1
+		if g.BoardPos.H > 1 {
+			g.BoardPos.H -= 1
 		}
 	case cmd.MoveBoardDown:
-		g.BoardPos.Height += 1
+		g.BoardPos.H += 1
 	case cmd.SelectMode:
 		i, _ := strconv.Atoi(arg)
 		g.platform.Options().Set(i - 1)
@@ -250,7 +251,7 @@ func (g *Game) RunCommand(command cmd.Cmd, arg string) error {
 	return nil
 }
 
-func (g *Game) ShowScene(scene scenes.Scene, timeout time.Duration) input.Key {
+func (g *Game) ShowScene(scene *scenes.Scene, timeout time.Duration) *input.Input {
 	g.platform.RenderScene(scene)
 	return input.AwaitInput(g.input, timeout)
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func (g *Game) showOptions() {
-	scn := scenes.NewOptionsScene(scenes.TitleOptions, g.platform.Options())
+	scn := scenes.NewMenu(scenes.TitleOptions, g.platform.Options())
 	opt := scn.Options()
 
 	if len(opt.List()) == 0 {
@@ -16,11 +16,8 @@ func (g *Game) showOptions() {
 	for {
 		key := g.ShowScene(scn, 0)
 		c, _ := cmd.KeyToMenuCmd(key)
-		if i, done, ok := cmd.HandleOptionsCmd(c, len(opt.List()), opt.Get()); ok {
-			opt.Set(i)
-			if done {
-				break
-			}
+		if result := cmd.HandleOptionsCmd(c, opt); result == cmd.HandleResultSelectionFinished {
+			return
 		}
 	}
 }

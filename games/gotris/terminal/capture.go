@@ -13,26 +13,8 @@ import (
 
 var debug = os.Getenv("DEBUG") != ""
 
-type key struct {
-	rune  rune
-	mod   input.Mod
-	runes []rune
-}
-
-func (k *key) Rune() rune {
-	return k.rune
-}
-
-func (k *key) Mod() input.Mod {
-	return k.mod
-}
-
-func (k *key) Runes() []rune {
-	return k.runes
-}
-
-func (t *Terminal) CaptureInput(ctx context.Context) (<-chan input.Key, func(), error) {
-	keys := make(chan input.Key)
+func (t *Terminal) CaptureInput(ctx context.Context) (<-chan *input.Input, func(), error) {
+	keys := make(chan *input.Input, 10)
 	stdin := int(t.stdin.Fd())
 
 	state, err := xterm.MakeRaw(stdin)
@@ -51,11 +33,11 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan input.Key, func(), 
 		}
 	}
 
-	sendKey := func(r rune, mod input.Mod, runes []rune) {
+	sendKey := func(in *input.Input) {
 		select {
-		case keys <- &key{r, input.Mod(mod), runes}:
+		case keys <- in:
 		default:
-			// ignore new input if prev. input is not processed
+			// ignore new input if prev. input is stalled
 		}
 	}
 
@@ -75,7 +57,7 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan input.Key, func(), 
 		}()
 		in := bufio.NewReader(os.Stdin)
 		var buf []rune
-		var mod input.Mod
+		var mod input.Flag
 
 		for {
 			if stopRequested() {
@@ -92,28 +74,29 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan input.Key, func(), 
 
 			switch handleRune(len(buf), r) {
 			case actionSendWithAltAsMovement:
-				mod |= input.ModAlt | input.ModMove
+				mod |= input.FlagAlt | input.FlagMove
 				fallthrough
 			case actionAppendAndSend:
-				sendKey(r, mod, append(buf, r))
+				sendKey(input.NewFromRune(r, mod))
 				mod = 0
 				buf = nil
 			case actionAppendAlt:
-				mod |= input.ModAlt
+				mod |= input.FlagAlt
 			case actionAppendCtrl:
-				mod |= input.ModCtrl
+				mod |= input.FlagCtrl
 			case actionAppendShift:
-				mod |= input.ModShift
+				mod |= input.FlagShift
 			case actionAppendAltShift:
-				mod |= input.ModAlt | input.ModShift
+				mod |= input.FlagAlt | input.FlagShift
 			case actionAppendCtrlShift:
-				mod |= input.ModCtrl | input.ModShift
+				mod |= input.FlagCtrl | input.FlagShift
 			case actionAppendMovement:
-				mod |= input.ModMove
+				mod |= input.FlagMove
 				fallthrough
 			case actionAppendPartial, actionAppendEscape:
 				buf = append(buf, r)
 			case actionQuit:
+				// TODO: allow Q as rune and not just instant quit
 				return
 			}
 		}

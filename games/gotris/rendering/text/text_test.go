@@ -6,19 +6,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/ubntc/go/games/gotris/game"
+	"github.com/ubntc/go/games/gotris/game/rules"
 )
 
 func TestRendering(t *testing.T) {
 	assert := assert.New(t)
 
-	g := game.NewGame(game.TestRules, nil)
+	g := game.NewGame(rules.TestRules, nil)
 	g.CaptureInput = false
 	step := 0
 	for {
 		step += 1
 		out := Render(g)
 		t.Log("text rendering, step", step, "\n"+strings.Join(out, "\n"))
-		assert.Len(out, g.BoardSize.Height+3)
+		assert.Len(out, g.BoardSize.H+3)
 		if step == 10 {
 			break
 		}

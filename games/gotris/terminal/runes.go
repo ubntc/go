@@ -20,7 +20,7 @@ func handleRune(historyLength int, r rune) action {
 	switch historyLength {
 	case 0:
 		switch r {
-		case 'q', 3, 4:
+		case 3, 4:
 			return actionQuit
 		case 27:
 			// Escape charcter (aka. 033, 0x1B), part 1/?
@@ -35,7 +35,7 @@ func handleRune(historyLength int, r rune) action {
 			// Escape part 2/2, without further keys pending, used only for ALT + ←→
 			return actionSendWithAltAsMovement
 		case 27:
-			// iTerm2 send this on ALT + ←→
+			// iTerm2 sends this on ALT + ←→
 			return actionAppendAlt
 		}
 	case 2:

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ubntc/go/games/gotris/game"
+	"github.com/ubntc/go/games/gotris/game/options"
 	"github.com/ubntc/go/games/gotris/game/scenes"
 	"github.com/ubntc/go/games/gotris/rendering/text"
 	"github.com/ubntc/go/games/gotris/rendering/text/modes"
@@ -18,16 +19,16 @@ import (
 type Platform struct {
 	terminal.Terminal
 	modeMan *modes.ModeManager
-	options scenes.Options
+	options options.Options
 }
 
 func NewPlatform() *Platform {
 	mm := text.ModeMan()
 	opts := RenderingOptions{
-		SceneOptions: scenes.SceneOptions{
-			Options:      mm.ModeNames(),
-			Descriptions: mm.ModeDescs(),
-		},
+		MemStore: *options.NewMemStore(
+			mm.ModeNames(),
+			mm.ModeDescs(),
+		),
 	}
 	p := &Platform{*terminal.New(os.Stdout), mm, &opts}
 	opts.p = p
@@ -44,7 +45,7 @@ func (p *Platform) Render(g *game.Game) {
 	p.Print(strings.Join(text.Render(g), "\r\n"))
 }
 
-func (p *Platform) RenderScene(scene scenes.Scene) {
+func (p *Platform) RenderScene(scene *scenes.Scene) {
 	var screen string
 	opt := scene.Options()
 	switch scene.Name() {
@@ -74,6 +75,6 @@ func (p *Platform) SetRenderingMode(mode string) error {
 	return nil
 }
 
-func (p *Platform) Options() scenes.Options {
+func (p *Platform) Options() options.Options {
 	return p.options
 }

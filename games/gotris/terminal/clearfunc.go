@@ -16,7 +16,7 @@ func init() {
 	clear["linux"] = func(fd *os.File) {
 		cmd := exec.Command("tput", "clear")
 		cmd.Stdout = fd
-		cmd.Run()
+		_ = cmd.Run()
 	}
 
 	clear["darwin"] = clear["linux"]
@@ -24,7 +24,7 @@ func init() {
 	clear["windows"] = func(fd *os.File) {
 		cmd := exec.Command("cmd", "/c", "cls")
 		cmd.Stdout = fd
-		cmd.Run()
+		_ = cmd.Run()
 	}
 }
 

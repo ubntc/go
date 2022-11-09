@@ -1,4 +1,4 @@
-package game_test
+package controls_test
 
 import (
 	"testing"
@@ -7,27 +7,18 @@ import (
 	"github.com/ubntc/go/games/gotris/input"
 )
 
-type K struct {
-	mod  input.Mod
-	rune rune
-}
-
-func (k *K) Mod() input.Mod { return k.mod }
-func (k *K) Rune() rune     { return k.rune }
-func (k *K) Runes() []rune  { return []rune{k.rune} }
-
 func TestKeyToCmd(t *testing.T) {
 	tests := []struct {
 		name    string
-		key     K
+		in      *input.Input
 		wantCmd cmd.Cmd
 		wantArg string
 	}{
-		{"drop", K{0, ' '}, cmd.Drop, ""},
+		{"drop", input.New(input.KeyButton3, 0), cmd.Drop, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCmd, gotOk := cmd.KeyToCmd(&tt.key)
+			gotCmd, gotOk := cmd.InputToCmd(tt.in)
 			if gotCmd != tt.wantCmd {
 				t.Errorf("KeyToCmd() gotCmd = %v, want %v", gotCmd, tt.wantCmd)
 			}

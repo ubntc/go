@@ -1,13 +1,10 @@
 package scenes
 
-type Scene interface {
-	Name() string
-	Options() Options
-}
+import "github.com/ubntc/go/games/gotris/game/options"
 
-type SimpleScene struct {
-	SceneOptions Options
-	name         string
+type Scene struct {
+	name    string
+	options options.Options
 }
 
 const (
@@ -21,23 +18,25 @@ const (
 	START, OPTIONS, CONTROLS, QUIT = "START", "OPTIONS", "CONTROLS", "QUIT"
 )
 
-func New(name string) *SimpleScene {
-	return &SimpleScene{
+// New returns a named Scene without any Options.
+func New(name string) *Scene {
+	return &Scene{
 		name: name,
 	}
 }
 
-func NewOptionsScene(name string, opt Options) *SimpleScene {
-	return &SimpleScene{
-		name:         name,
-		SceneOptions: opt,
+// New returns a named Scene without any Options.
+func NewMenu(name string, opt options.Options) *Scene {
+	return &Scene{
+		name:    name,
+		options: opt,
 	}
 }
 
-func (s *SimpleScene) Options() Options {
-	return s.SceneOptions
+func (s *Scene) Options() options.Options {
+	return s.options
 }
 
-func (s *SimpleScene) Name() string {
+func (s *Scene) Name() string {
 	return s.name
 }

@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"github.com/ubntc/go/games/gotris/game"
+	"github.com/ubntc/go/games/gotris/game/options"
 	"github.com/ubntc/go/games/gotris/game/scenes"
 )
 
@@ -44,7 +45,7 @@ func (p *Platform) ShowMessage(text string) {
 	echo(text)
 }
 
-func (p *Platform) Options() scenes.Options {
+func (p *Platform) Options() options.Options {
 	return nil
 }
 
@@ -57,7 +58,7 @@ func (p *Platform) Render(g *game.Game) {
 	echo("Score", g.Score)
 }
 
-func (p *Platform) RenderScene(scene scenes.Scene) {
+func (p *Platform) RenderScene(scene *scenes.Scene) {
 	content := canvas.NewText(scene.Name(), WHITE)
 	p.pix.SetContent(content)
 	echo(scene)

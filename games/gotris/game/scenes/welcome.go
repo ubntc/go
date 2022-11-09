@@ -1,10 +1,10 @@
 package scenes
 
-func NewWelcomeMenu() Scene {
-	return NewOptionsScene(
+import "github.com/ubntc/go/games/gotris/game/options"
+
+func NewWelcomeMenu() *Scene {
+	return NewMenu(
 		TitleWelcome,
-		&SceneOptions{
-			Options: []string{START, OPTIONS, CONTROLS, QUIT},
-		},
+		options.NewMemStore([]string{START, OPTIONS, CONTROLS, QUIT}, nil),
 	)
 }
