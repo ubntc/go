@@ -7,42 +7,39 @@ import (
 	"time"
 )
 
-type Mod int
-
-const (
-	ModNone  Mod = 0
-	ModShift Mod = 1
-	ModAlt   Mod = 2
-	ModCtrl  Mod = 4
-	ModMove  Mod = 8
-)
-
-type Key interface {
-	Rune() rune
-	Mod() Mod
-	Runes() []rune
+type Input struct {
+	key   Key
+	flags Flag
+	rune  rune
 }
 
-func IsMovement(key Key) bool {
-	return (key.Mod() & ModMove) != 0
+var Empty = New(KeyNone, FlagNone)
+
+func New(k Key, flags Flag) *Input {
+	return &Input{k, flags, 0}
 }
 
-func IsAlt(key Key) bool {
-	return (key.Mod() & ModAlt) != 0
-}
+func (k *Input) IsMovement() bool { return k.flags.IsMovement() }
+func (k *Input) IsAlt() bool      { return k.flags.IsAlt() }
+func (k *Input) IsText() bool     { return k.rune != 0 }
+func (k *Input) Key() Key         { return k.key }
+func (k *Input) Flags() Flag      { return k.flags }
+func (k *Input) Rune() rune       { return k.rune }
+func (k *Input) Text() string     { return string(k.rune) }
 
 // AwaitInput waits for user input or a given timeout.
-func AwaitInput(input <-chan Key, timeout time.Duration) (key Key) {
+func AwaitInput(input <-chan *Input, timeout time.Duration) *Input {
 	switch {
 	case input == nil:
 		time.Sleep(timeout)
 	case timeout == 0:
-		key = <-input
+		return <-input
 	case timeout != 0:
 		select {
-		case key = <-input:
+		case k := <-input:
+			return k
 		case <-time.After(timeout):
 		}
 	}
-	return
+	return Empty
 }
