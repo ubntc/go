@@ -1,0 +1,23 @@
+syntax = "proto3";
+package message;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/ubntc/go/playground/compat/message;message";
+
+enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_ONE = 1;
+    TYPE_TWO = 2;
+}
+
+message Msg {
+    Type type = 1;
+    string value = 2;
+
+    google.protobuf.Timestamp ts = 20;
+    google.protobuf.Duration dur = 21;
+    google.protobuf.Struct obj = 22;
+}

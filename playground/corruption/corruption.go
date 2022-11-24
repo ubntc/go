@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -74,6 +75,8 @@ var (
 func check(wg *sync.WaitGroup) {
 	defer func() {
 		if r := recover(); r != nil {
+			fmt.Println(r)
+			debug.PrintStack()
 			results <- PanicError
 		}
 	}()
@@ -255,11 +258,7 @@ func countResults(ctx context.Context) {
 	}
 }
 
-var numProcs = flag.Int("n", 10, "num procs")
-var maxResults = flag.Int("m", 1e6, "num procs")
-
-func main() {
-	flag.Parse()
+func demoCorruption() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -270,4 +269,14 @@ func main() {
 	countResults(ctx)
 	cancel()
 	<-ctx.Done()
+}
+
+var (
+	numProcs   = flag.Int("n", 10, "num procs")
+	maxResults = flag.Int("m", 1e6, "num procs")
+)
+
+func main() {
+	flag.Parse()
+	demoCorruption()
 }
