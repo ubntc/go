@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/ubntc/go/playground/compat/message"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 var marshaller = protojson.MarshalOptions{
@@ -74,4 +75,34 @@ func TestDefaultMarshaller(t *testing.T) {
 	v = string(b)
 	fmt.Println("default marshalling with unknown enum", v)
 	assert.Contains(v, `:3`)
+}
+
+func TestProtoMarshaller(t *testing.T) {
+	assert := assert.New(t)
+	msg := &message.Msg{Type: 2}
+	b, err := proto.Marshal(msg)
+	assert.NoError(err)
+	v := string(b)
+	assert.Equal(v, "\b\x02")
+
+	msg = &message.Msg{Type: 3}
+	b, err = proto.Marshal(msg)
+	assert.NoError(err)
+	v = string(b)
+	assert.Equal(v, "\b\x03")
+}
+
+func TestProtoUnmarshaller(t *testing.T) {
+	assert := assert.New(t)
+	msg := &message.Msg{}
+	err := proto.Unmarshal([]byte("\b\x02"), msg)
+	assert.NoError(err)
+	assert.True(msg.Type == 2)
+	assert.Equal(msg.Type, message.Type_TYPE_TWO)
+
+	msg = &message.Msg{}
+	err = proto.Unmarshal([]byte("\b\x03"), msg)
+	assert.NoError(err)
+	assert.True(msg.Type == 3)
+	assert.NotEqual(msg.Type, 3, "types of ints should mismatch")
 }
