@@ -15,12 +15,12 @@ func (g *Game) GameLoop(ctx context.Context) error {
 	ticker := time.NewTicker(g.TickTime)
 	defer ticker.Stop()
 	for {
-		g.platform.Render(g)
+		g.Platform.Render(g.Game)
 		if lastErr != nil {
 			msg = lastErr.Error()
 		}
 		if msg != "" {
-			g.platform.ShowMessage(msg)
+			g.Platform.ShowMessage(msg)
 		}
 
 		select {

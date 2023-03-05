@@ -1,12 +1,13 @@
 package game
 
 import (
+	"github.com/ubntc/go/games/gotris/common/labels"
+	"github.com/ubntc/go/games/gotris/common/platform"
 	cmd "github.com/ubntc/go/games/gotris/game/controls"
-	"github.com/ubntc/go/games/gotris/game/scenes"
 )
 
 func (g *Game) showOptions() {
-	scn := scenes.NewMenu(scenes.TitleOptions, g.platform.Options())
+	scn := platform.NewMenu(labels.TitleOptions, g.Platform.Options())
 	opt := scn.Options()
 
 	if len(opt.List()) == 0 {

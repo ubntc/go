@@ -7,14 +7,17 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/ubntc/go/games/gotris/input"
+	"github.com/ubntc/go/games/gotris/common/input"
 	xterm "golang.org/x/term"
 )
 
-var debug = os.Getenv("DEBUG") != ""
+var (
+	debug = os.Getenv("DEBUG") != ""
+	// debugHandleRune = os.Getenv("DEBUG_HANDLE_RUNE") != ""
+)
 
-func (t *Terminal) CaptureInput(ctx context.Context) (<-chan *input.Input, func(), error) {
-	keys := make(chan *input.Input, 10)
+func (t *Terminal) CaptureInput(ctx context.Context) (keys <-chan *input.Input, restore func(), err error) {
+	buffer := make(chan *input.Input, 10)
 	stdin := int(t.stdin.Fd())
 
 	state, err := xterm.MakeRaw(stdin)
@@ -26,7 +29,7 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan *input.Input, func(
 	}
 	t.HideCursor()
 
-	restore := func() {
+	restore = func() {
 		t.ShowCursor()
 		if err := xterm.Restore(stdin, state); err != nil {
 			log.Fatalln(errors.Wrap(err, "term.Restore"))
@@ -35,7 +38,7 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan *input.Input, func(
 
 	sendKey := func(in *input.Input) {
 		select {
-		case keys <- in:
+		case buffer <- in:
 		default:
 			// ignore new input if prev. input is stalled
 		}
@@ -53,7 +56,7 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan *input.Input, func(
 	go func() {
 		defer func() {
 			restore()
-			close(keys)
+			close(buffer)
 		}()
 		in := bufio.NewReader(os.Stdin)
 		var buf []rune
@@ -102,5 +105,5 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan *input.Input, func(
 		}
 	}()
 
-	return keys, restore, nil
+	return buffer, restore, nil
 }

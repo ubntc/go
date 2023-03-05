@@ -26,17 +26,36 @@ func main() {
 	ticker := time.NewTicker(time.Second / 10)
 	defer ticker.Stop()
 
-	timeFirstClear := time.Now()
+	clearCountAvg := 0.0
 	clearCount := 0
+	timeWindowStart := time.Now()
+
 	pause := true
-	echo := t.Println
 	debug := os.Getenv("DEBUG") != ""
 
-	echo("-------------------------------------------------")
-	echo("Press 'c', 'x', or 'o' to test the clear methods.")
-	echo("Hold the key to test the clear speed.            ")
-	echo("Press 'p' to start.                              ")
-	echo("-------------------------------------------------")
+	echo := t.Println
+	help := func() {
+		echo("-------------------------------------------------")
+		echo("Press 'c', 'x', or 'o' to test the clear methods.")
+		echo("Hold the key to test the clear speed.            ")
+		echo("                                                 ")
+		echo("Press 'h' to show this help (and pause).         ")
+		echo("Press 'p' to start and pause.                    ")
+		echo("-------------------------------------------------")
+	}
+
+	showResults := func() {
+		dt := time.Since(timeWindowStart)
+		if dt > time.Second {
+			timeWindowStart = time.Now()
+			clearCountAvg = clearCountAvg*0.5 + float64(clearCount*int(time.Second))/float64(dt)
+			clearCount = 0
+		}
+		echo("Clears in current Second:", clearCount)
+		echo("Clears per Second:       ", clearCountAvg)
+	}
+
+	help()
 
 	i := 0
 	for {
@@ -61,6 +80,11 @@ func main() {
 			case 'x':
 				t.RunClearCommand()
 				echo("Executed Clear Command")
+			case 'h':
+				t.Clear()
+				pause = true
+				help()
+				continue
 			case 'p':
 				pause = !pause
 				if pause {
@@ -70,11 +94,9 @@ func main() {
 			default:
 				continue
 			}
-			// print clear speed results
-			dt := time.Since(timeFirstClear)
-			clearCount += 1
-			cps := clearCount * int(time.Second) / int(dt)
-			echo("Clears/Second:", cps)
+			clearCount++
+			showResults()
+
 		case <-ticker.C:
 			if !pause {
 				echo(i, time.Now())

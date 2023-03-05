@@ -31,7 +31,7 @@ type Terminal struct {
 	stdin  *os.File
 }
 
-// New returns a new terminal for thr given file descriptor.
+// New returns a new terminal for the given file descriptor.
 func New(stdout *os.File) *Terminal {
 	return &Terminal{stdout, os.Stdin}
 }
@@ -64,7 +64,7 @@ func (t *Terminal) RunClearCommand() {
 	callClearFunc(t.stdout)
 }
 
-// Clear clears the screen and setting the cursor to 0,0.
+// Clear clears the screen and sets the cursor to 0,0.
 func (t *Terminal) Clear() {
 	switch os.Getenv(EnvTermApp) {
 	case TermAppAppleTerminal, TermAppVscode:

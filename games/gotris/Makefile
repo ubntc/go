@@ -1,4 +1,4 @@
-.PHONY: run test debug gui install
+.PHONY: run test debug install
 
 test:
 	go test -race ./...
@@ -8,10 +8,7 @@ debug:
 	go test -v -race ./...
 
 run:
-	go run cmd/gotris/gotris.go
-
-gui:
-	go run cmd/gotris/gotris.go --platform fyne
+	go run gotris.go
 
 install:
-	go install cmd/gotris/gotris.go
+	go install gotris.go

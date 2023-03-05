@@ -17,6 +17,9 @@ const (
 )
 
 func handleRune(historyLength int, r rune) action {
+	// if debugHandleRune {
+	// 	fmt.Printf("handleRune(%d, %v)\n\r", historyLength, r)
+	// }
 	switch historyLength {
 	case 0:
 		switch r {

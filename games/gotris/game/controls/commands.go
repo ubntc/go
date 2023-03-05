@@ -1,8 +1,8 @@
 package controls
 
 import (
-	"github.com/ubntc/go/games/gotris/game/geometry"
-	"github.com/ubntc/go/games/gotris/game/options"
+	"github.com/ubntc/go/games/gotris/common/geometry"
+	"github.com/ubntc/go/games/gotris/common/options"
 )
 
 type Cmd string
