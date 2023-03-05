@@ -3,8 +3,8 @@ package controls_test
 import (
 	"testing"
 
+	"github.com/ubntc/go/games/gotris/common/input"
 	cmd "github.com/ubntc/go/games/gotris/game/controls"
-	"github.com/ubntc/go/games/gotris/input"
 )
 
 func TestKeyToCmd(t *testing.T) {

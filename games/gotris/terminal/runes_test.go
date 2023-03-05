@@ -9,7 +9,7 @@ func Test_handleRune(t *testing.T) {
 		newRune       rune
 		want          action
 	}{
-		{"quit", 0, 'q', actionQuit},
+		{"do not quit on Q", 0, 'q', actionAppendAndSend},
 		{"end of text ctrl-c 3", 0, 3, actionQuit},
 		{"end of xmit ctrl-d 4", 0, 4, actionQuit},
 
@@ -29,7 +29,7 @@ func Test_handleRune(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := handleRune(tt.historyLength, tt.newRune); got != tt.want {
-				t.Errorf("handleRune() = %v, want %v", got, tt.want)
+				t.Errorf("%s: handleRune() = %v, want %v", tt.name, got, tt.want)
 			}
 		})
 	}

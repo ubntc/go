@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ubntc/go/games/gotris/common/labels"
+	"github.com/ubntc/go/games/gotris/common/options"
+	scenes "github.com/ubntc/go/games/gotris/common/platform"
 	cmd "github.com/ubntc/go/games/gotris/game/controls"
-	"github.com/ubntc/go/games/gotris/game/scenes"
 )
 
 func (g *Game) handleCommonCommand(c cmd.Cmd) (quit, ok bool) {
@@ -27,7 +29,10 @@ func hint[K any](v ...K) {
 }
 
 func (g *Game) showWelcome(ctx context.Context) {
-	welcome := scenes.NewWelcomeMenu()
+	welcome := scenes.NewMenu(
+		labels.TitleWelcome,
+		options.NewMemStore([]string{labels.START, labels.OPTIONS, labels.CONTROLS, labels.QUIT}, nil),
+	)
 	opts := welcome.Options()
 
 	for {
@@ -49,15 +54,16 @@ func (g *Game) showWelcome(ctx context.Context) {
 
 		if result := cmd.HandleOptionsCmd(c, opts); result == cmd.HandleResultSelectionFinished {
 			switch opts.GetName() {
-			case scenes.START:
+			case labels.START:
+				g.Init()
 				if err := g.GameLoop(ctx); err != nil {
 					g.gameOver()
 				}
-			case scenes.OPTIONS:
+			case labels.OPTIONS:
 				g.showOptions()
-			case scenes.CONTROLS:
+			case labels.CONTROLS:
 				g.showHelp()
-			case scenes.QUIT:
+			case labels.QUIT:
 				return
 			}
 		}

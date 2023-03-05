@@ -8,7 +8,7 @@ import (
 func (g *Game) startCapture(ctx context.Context) context.CancelFunc {
 	// do not capture input during tests
 	if g.CaptureInput {
-		ch, restore, err := g.platform.CaptureInput(ctx)
+		ch, restore, err := g.Platform.CaptureInput(ctx)
 		if err != nil {
 			panic(err)
 		}

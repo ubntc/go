@@ -7,57 +7,59 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	geom "github.com/ubntc/go/games/gotris/common/geometry"
+	"github.com/ubntc/go/games/gotris/common/input"
+	"github.com/ubntc/go/games/gotris/common/platform"
 	cmd "github.com/ubntc/go/games/gotris/game/controls"
-	"github.com/ubntc/go/games/gotris/game/geometry"
 	"github.com/ubntc/go/games/gotris/game/rules"
-	"github.com/ubntc/go/games/gotris/game/scenes"
-	"github.com/ubntc/go/games/gotris/input"
 )
 
 // Game stores the game state
 type Game struct {
-	rules.Rules
+	platform.Game
 
 	Steps int
-	Score int
-	Speed time.Duration
 
 	GameOverScreenDuration time.Duration
 
 	Message map[string]interface{}
 
-	CurrentTile *Tile
-	NextTile    *Tile
-
-	BoardPos     geometry.Dim
-	Board        geometry.PointMap
 	CaptureInput bool
 
-	platform Platform
-	input    <-chan *input.Input
+	input <-chan *input.Input
 }
 
-func NewGame(gameRules rules.Rules, platform Platform) *Game {
+func NewGame(gameRules platform.Rules, renderngPlatform platform.Platform) *Game {
 	g := &Game{
-		Rules:        gameRules,
-		Board:        make(geometry.PointMap),
-		Speed:        gameRules.TickTime,
-		BoardPos:     *geometry.NewDim(8, 0),
+		Game: platform.Game{
+			Rules:    gameRules,
+			BoardPos: *geom.NewDim(8, 0),
+			Platform: renderngPlatform,
+		},
 		CaptureInput: true,
-
-		platform: platform,
 	}
+	g.Init()
+	return g
+}
+
+// Init resets the game board and speed and spawns the first tile.
+func (g *Game) Init() {
+	g.Board = make(geom.PointMap)
+	g.Speed = g.TickTime
+	g.Score = 0
+
 	switch g.Seed {
 	case rules.SeedRandom:
 		rand.Seed(time.Now().Unix())
 	default:
 		rand.Seed(int64(g.Seed))
 	}
-	g.SpawnTiles()
-	return g
+	g.SpawnTile()
 }
 
-func (g *Game) SpawnTiles() {
+// SpawnTile moves the next tile in the preview onto the game board
+// and creates a tile in the preview.
+func (g *Game) SpawnTile() {
 	if g.NextTile == nil {
 		g.NextTile = RandomTile()
 	}
@@ -68,13 +70,13 @@ func (g *Game) SpawnTiles() {
 	// move tile to the board
 	dx := g.BoardSize.W / 2
 	dy := g.BoardSize.H - 1
-	t.points = geometry.OffsetPointsXY(t.points, dx, dy)
+	t.Move(dx, dy)
 	g.CurrentTile = t
 }
 
 func (g *Game) Advance() (err error) {
 	g.Steps += 1
-	if err = g.Move(g.CurrentTile, geometry.DirDown); err != nil {
+	if err = g.Move(g.CurrentTile, geom.DirDown); err != nil {
 		// tile hit another tile or the ground
 		// split tile into blocks and check for lines
 		// if the split fails the game is over (we are stuck somewhere on the top)
@@ -87,7 +89,7 @@ func (g *Game) Advance() (err error) {
 			g.RemoveLines(lines)
 			g.Speed -= g.SpeedStep
 		}
-		g.SpawnTiles()
+		g.SpawnTile()
 	}
 	return nil
 }
@@ -106,16 +108,16 @@ func (g *Game) AdvanceBy(steps int) error {
 
 // ResolveTile merged a given tile's blocks into the game blocks;
 // returns and error if the tile cannot be merged (Game Over!).
-func (g *Game) ResolveTile(t *Tile) error {
+func (g *Game) ResolveTile(t *geom.Tile) error {
 	if g.Board.ContainsAny(t.Points()) {
 		return errors.New("cannot resolve, tile collides with bocks")
 	}
-	MergeTile(t, g.Board)
+	geom.MergeTile(t, g.Board)
 	return nil
 }
 
-func (g *Game) ModifyTile(t *Tile, points []geometry.Point, ori geometry.Dir, center int) error {
-	if !geometry.PointsInRange(points, g.BoardSize.W, g.BoardSize.H+4) {
+func (g *Game) ModifyTile(t *geom.Tile, points []geom.Point, ori geom.Dir, center int) error {
+	if !geom.PointsInRange(points, g.BoardSize.W, g.BoardSize.H+4) {
 		return errors.New("tile not inside screen")
 	}
 	if g.Board.ContainsAny(points) {
@@ -126,16 +128,16 @@ func (g *Game) ModifyTile(t *Tile, points []geometry.Point, ori geometry.Dir, ce
 }
 
 // Move move a given tile one step in the given direction (U|D|L|R).
-func (g *Game) Move(t *Tile, dir geometry.Dir) error {
-	points := geometry.OffsetPointsDir(t.Points(), dir)
-	if err := g.ModifyTile(t, points, t.orientation, t.center); err != nil {
+func (g *Game) Move(t *geom.Tile, dir geom.Dir) error {
+	points := geom.OffsetPointsDir(t.Points(), dir)
+	if err := g.ModifyTile(t, points, t.Orientation(), t.CenterPoint()); err != nil {
 		return errors.Wrap(err, "cannot move")
 	}
 	return nil
 }
 
 // Rotate rotates (and if needed moves) the given tile in the given direction (CW|CCW)
-func (g *Game) Rotate(t *Tile, r geometry.Spin) error {
+func (g *Game) Rotate(t *geom.Tile, r geom.Spin) error {
 	points, ori, center := t.RotatedPoints(r)
 	if err := g.ModifyTile(t, points, ori, center); err != nil {
 		return errors.Wrap(err, "cannot rotate")
@@ -143,22 +145,22 @@ func (g *Game) Rotate(t *Tile, r geometry.Spin) error {
 	return nil
 }
 
-func (g *Game) RotateAndMove(t *Tile, r geometry.Spin) (err error) {
+func (g *Game) RotateAndMove(t *geom.Tile, r geom.Spin) (err error) {
 	if err = g.Rotate(t, r); err == nil {
 		return err
 	}
-	if err = g.Move(t, geometry.DirRight); err == nil {
+	if err = g.Move(t, geom.DirRight); err == nil {
 		return g.Rotate(t, r)
 	}
-	if err = g.Move(t, geometry.DirLeft); err == nil {
+	if err = g.Move(t, geom.DirLeft); err == nil {
 		return g.Rotate(t, r)
 	}
 	return err
 }
 
-func (g *Game) Drop(t *Tile) error {
+func (g *Game) Drop(t *geom.Tile) error {
 	for {
-		if err := g.Move(t, geometry.DirDown); err != nil {
+		if err := g.Move(t, geom.DirDown); err != nil {
 			return err
 		}
 	}
@@ -216,10 +218,10 @@ func (g *Game) Dump() {
 }
 
 func (g *Game) RunCommand(command cmd.Cmd, arg string) error {
-	if dir := command.ToDir(); dir != geometry.DirUnkown {
+	if dir := command.ToDir(); dir != geom.DirUnkown {
 		return g.Move(g.CurrentTile, dir)
 	}
-	if spin := command.ToSpin(); spin != geometry.SpinUnknown {
+	if spin := command.ToSpin(); spin != geom.SpinUnknown {
 		return g.RotateAndMove(g.CurrentTile, spin)
 	}
 	switch command {
@@ -244,14 +246,14 @@ func (g *Game) RunCommand(command cmd.Cmd, arg string) error {
 		g.BoardPos.H += 1
 	case cmd.SelectMode:
 		i, _ := strconv.Atoi(arg)
-		g.platform.Options().Set(i - 1)
+		g.Platform.Options().Set(i - 1)
 	default:
 		return fmt.Errorf("unknown command: %s", command)
 	}
 	return nil
 }
 
-func (g *Game) ShowScene(scene *scenes.Scene, timeout time.Duration) *input.Input {
-	g.platform.RenderScene(scene)
+func (g *Game) ShowScene(scene platform.Scene, timeout time.Duration) *input.Input {
+	g.Platform.RenderScene(scene)
 	return input.AwaitInput(g.input, timeout)
 }

@@ -1,6 +1,6 @@
 package controls
 
-import "github.com/ubntc/go/games/gotris/input"
+import "github.com/ubntc/go/games/gotris/common/input"
 
 func InputToCmd(in *input.Input) (c Cmd, arg string) {
 	if in == nil {

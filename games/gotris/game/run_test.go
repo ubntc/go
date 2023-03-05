@@ -5,18 +5,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ubntc/go/games/gotris/common/input"
+	"github.com/ubntc/go/games/gotris/common/options"
+	"github.com/ubntc/go/games/gotris/common/platform"
 	"github.com/ubntc/go/games/gotris/game"
-	"github.com/ubntc/go/games/gotris/game/options"
 	"github.com/ubntc/go/games/gotris/game/rules"
-	"github.com/ubntc/go/games/gotris/game/scenes"
-	"github.com/ubntc/go/games/gotris/input"
 )
 
 type Platform struct{}
 
-func (r *Platform) Render(game *game.Game)          {}
-func (r *Platform) RenderScene(scene *scenes.Scene) {}
-func (r *Platform) ShowMessage(text string)         {}
+func (r *Platform) Render(game platform.Game)        {}
+func (r *Platform) RenderScene(scene platform.Scene) {}
+func (r *Platform) ShowMessage(text string)          {}
 func (r *Platform) CaptureInput(context.Context) (<-chan *input.Input, func(), error) {
 	return nil, nil, nil
 }
