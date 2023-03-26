@@ -1,8 +1,8 @@
 package geometry
 
 type Point struct {
-	X int
-	Y int
+	X int `json:"x,omitempty"`
+	Y int `json:"y,omitempty"`
 }
 
 func NewPoint(x, y int) *Point {

@@ -85,8 +85,8 @@ func Prefix(prefix string, rows []string) []string {
 
 func RenderPreview(g platform.Game) []string {
 	blocks := make(geom.PointMap)
-	points := geom.OffsetPointsXY(g.NextTile.Points(), 1, 2)
-	blocks.SetAll(points, string(g.NextTile.Typ()))
+	points := geom.OffsetPointsXY(g.NextTile.Points, 1, 2)
+	blocks.SetAll(points, string(g.NextTile.Typ))
 	return RenderBlocks(blocks, g.PreviewSize.W, g.PreviewSize.H)
 }
 

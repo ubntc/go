@@ -1,5 +1,7 @@
 package geometry
 
+import "encoding/json"
+
 // PointMap stores strings in a 2D map with Points(x,y) as the key.
 type PointMap map[Point]string
 
@@ -83,4 +85,36 @@ func (m PointMap) SetAll(points []Point, value string) (res []Point) {
 		}
 	}
 	return
+}
+
+// pointTuple stores a point as 3-tuple. It is used to safely export a PointMap.
+type pointTuple struct {
+	X int    `json:"x,omitempty"`
+	Y int    `json:"y,omitempty"`
+	V string `json:"value,omitempty"`
+}
+
+func (m PointMap) MarshalJSON() ([]byte, error) {
+	data := make([]pointTuple, 0, len(m))
+	for k, v := range m {
+		data = append(data, pointTuple{k.X, k.Y, v})
+	}
+	return json.Marshal(data)
+}
+
+func (m *PointMap) UnmarshalJSON(data []byte) error {
+	tuples := make([]pointTuple, 0)
+	if err := json.Unmarshal(data, &tuples); err != nil {
+		return err
+	}
+
+	pm := make(PointMap, len(tuples))
+
+	for _, v := range tuples {
+		pm[Point{v.X, v.Y}] = v.V
+	}
+
+	*m = pm
+
+	return nil
 }

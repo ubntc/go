@@ -109,7 +109,7 @@ func (g *Game) AdvanceBy(steps int) error {
 // ResolveTile merged a given tile's blocks into the game blocks;
 // returns and error if the tile cannot be merged (Game Over!).
 func (g *Game) ResolveTile(t *geom.Tile) error {
-	if g.Board.ContainsAny(t.Points()) {
+	if g.Board.ContainsAny(t.Points) {
 		return errors.New("cannot resolve, tile collides with bocks")
 	}
 	geom.MergeTile(t, g.Board)
@@ -129,8 +129,8 @@ func (g *Game) ModifyTile(t *geom.Tile, points []geom.Point, ori geom.Dir, cente
 
 // Move move a given tile one step in the given direction (U|D|L|R).
 func (g *Game) Move(t *geom.Tile, dir geom.Dir) error {
-	points := geom.OffsetPointsDir(t.Points(), dir)
-	if err := g.ModifyTile(t, points, t.Orientation(), t.CenterPoint()); err != nil {
+	points := geom.OffsetPointsDir(t.Points, dir)
+	if err := g.ModifyTile(t, points, t.Orientation, t.CenterPoint()); err != nil {
 		return errors.Wrap(err, "cannot move")
 	}
 	return nil

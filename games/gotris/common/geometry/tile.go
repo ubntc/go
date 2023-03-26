@@ -3,13 +3,13 @@ package geometry
 type Typ string
 
 type Tile struct {
-	typ         Typ
-	orientation Dir
-	points      []Point
-	center      int
+	Typ         Typ     `json:"type,omitempty"`
+	Orientation Dir     `json:"orientation,omitempty"`
+	Points      []Point `json:"points,omitempty"`
+	Center      int     `json:"center,omitempty"`
 
-	// drawings map  for looking up tile layouts
-	drawings Drawings
+	// Drawings map  for looking up tile layouts
+	Drawings Drawings `json:"drawings,omitempty"`
 }
 
 // Drawings provides a data structure to store drawing variants of each tile.
@@ -18,43 +18,35 @@ type Drawings map[Typ][]string
 func NewTile(typ Typ, x, y int, drawings Drawings) *Tile {
 	points, ori, center := drawings.PointsForType(typ, DirUp)
 	return &Tile{
-		typ:         typ,
-		orientation: ori,
-		points:      OffsetPointsXY(points, x, y),
-		center:      center,
-		drawings:    drawings,
+		Typ:         typ,
+		Orientation: ori,
+		Points:      OffsetPointsXY(points, x, y),
+		Center:      center,
+		Drawings:    drawings,
 	}
 }
 
-func (t *Tile) Points() []Point {
-	return t.points
-}
-
 func (t *Tile) SetPoints(points []Point, ori Dir, center int) {
-	t.points = points
-	t.orientation = ori
-	t.center = center
+	t.Points = points
+	t.Orientation = ori
+	t.Center = center
 }
 
 func (t *Tile) Move(dx, dy int) {
-	t.points = OffsetPointsXY(t.points, dx, dy)
+	t.Points = OffsetPointsXY(t.Points, dx, dy)
 }
 
 func (t *Tile) CenterPoint() int {
-	return t.center
-}
-
-func (t *Tile) Orientation() Dir {
-	return t.orientation
+	return t.Center
 }
 
 func (t *Tile) Orientations() []string {
-	return t.drawings[t.typ]
+	return t.Drawings[t.Typ]
 }
 
 func (t *Tile) RotatedPoints(spin Spin) (points []Point, orientation Dir, center int) {
 	numOris := Dir(len(t.Orientations()))
-	ori := Dir(t.orientation)
+	ori := Dir(t.Orientation)
 	switch spin {
 	case SpinLeft:
 		ori = (ori + numOris - 1) % numOris
@@ -63,7 +55,7 @@ func (t *Tile) RotatedPoints(spin Spin) (points []Point, orientation Dir, center
 	}
 
 	// obtain zero-centered points using the new orientation
-	points, dir, center := t.drawings.PointsForType(t.typ, ori)
+	points, dir, center := t.Drawings.PointsForType(t.Typ, ori)
 
 	// move the points in place
 	x, y := t.Position()
@@ -72,16 +64,8 @@ func (t *Tile) RotatedPoints(spin Spin) (points []Point, orientation Dir, center
 	return points, dir, center
 }
 
-func (t *Tile) Center() Point {
-	return t.points[t.center]
-}
-
 func (t *Tile) Position() (x int, y int) {
-	return t.Center().X, t.Center().Y
-}
-
-func (t *Tile) Typ() Typ {
-	return t.typ
+	return t.Points[t.Center].X, t.Points[t.Center].Y
 }
 
 // PointsForType returns the points for a given Typ and orientation.
@@ -116,5 +100,5 @@ func (d Drawings) PointsForType(typ Typ, orientation Dir) ([]Point, Dir, int) {
 }
 
 func MergeTile(t *Tile, blocks PointMap) {
-	blocks.SetAll(t.Points(), string(t.Typ()))
+	blocks.SetAll(t.Points, string(t.Typ))
 }
