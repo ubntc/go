@@ -1,10 +1,13 @@
 package compat
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/bigquery"
 	"github.com/stretchr/testify/assert"
 	"github.com/ubntc/go/playground/compat/message"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -105,4 +108,31 @@ func TestProtoUnmarshaller(t *testing.T) {
 	assert.NoError(err)
 	assert.True(msg.Type == 3)
 	assert.NotEqual(msg.Type, 3, "types of ints should mismatch")
+}
+
+func TestBigQueryIngest(t *testing.T) {
+	ctx := context.Background()
+	assert := assert.New(t)
+
+	prj := os.Getenv("COMPAT_TEST_PROJECT")
+	if prj == "" {
+		assert.FailNow("COMPAT_TEST_PROJECT not set")
+	}
+
+	c, err := bigquery.NewClient(ctx, prj)
+	assert.NoError(err)
+
+	ds := c.Dataset("tmp")
+	_ = ds.Create(ctx, nil)
+	tbl := ds.Table("proto_enum_compat_test")
+	_ = tbl.Create(ctx, nil)
+	ins := tbl.Inserter()
+
+	msg := &message.Msg{Type: 0}
+	err = ins.Put(ctx, msg)
+	assert.NoError(err)
+
+	msg = &message.Msg{Type: 3}
+	err = ins.Put(ctx, msg)
+	assert.NoError(err)
 }
