@@ -15,7 +15,7 @@ const (
 type Rules struct {
 	TickTime    time.Duration // inital tick time to advance the game
 	SpeedStep   time.Duration // how much to reduce the ticktime for anytime lines are scored
-	MaxSteps    int           // max number of ticks the game can take (the default 0 is means infinity)
+	MaxSteps    uint          // max number of ticks the game can take (the default 0 is means infinity)
 	BoardSize   geometry.Dim  // size of the game board
 	PreviewSize geometry.Dim  // size of the preview box
 	Seed        Seed          // Seed for randomization

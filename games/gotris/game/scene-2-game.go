@@ -38,7 +38,7 @@ func (g *Game) GameLoop(ctx context.Context) error {
 			case cmd.Empty:
 			default:
 				msg += fmt.Sprintf(", cmd: %s, arg:%s", c, arg)
-				lastErr = g.RunCommand(c, arg)
+				lastErr = g.runCommand(ctx, c, arg)
 			}
 		case <-ticker.C:
 			ticker.Reset(time.Duration(g.Speed))

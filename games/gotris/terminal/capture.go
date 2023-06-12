@@ -13,8 +13,8 @@ import (
 
 var debug = os.Getenv("DEBUG") != ""
 
-func (t *Terminal) CaptureInput(ctx context.Context) (<-chan *input.Input, func(), error) {
-	keys := make(chan *input.Input, 10)
+func (t *Terminal) CaptureInput(ctx context.Context) (<-chan input.Input, func(), error) {
+	keys := make(chan input.Input, 10)
 	stdin := int(t.stdin.Fd())
 
 	state, err := xterm.MakeRaw(stdin)
@@ -35,7 +35,7 @@ func (t *Terminal) CaptureInput(ctx context.Context) (<-chan *input.Input, func(
 
 	sendKey := func(in *input.Input) {
 		select {
-		case keys <- in:
+		case keys <- *in:
 		default:
 			// ignore new input if prev. input is stalled
 		}

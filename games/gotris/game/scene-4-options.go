@@ -1,11 +1,13 @@
 package game
 
 import (
+	"context"
+
 	cmd "github.com/ubntc/go/games/gotris/game/controls"
 	"github.com/ubntc/go/games/gotris/game/scenes"
 )
 
-func (g *Game) showOptions() {
+func (g *Game) showOptions(ctx context.Context) {
 	scn := scenes.NewMenu(scenes.TitleOptions, g.platform.Options())
 	opt := scn.Options()
 
@@ -14,7 +16,7 @@ func (g *Game) showOptions() {
 	}
 
 	for {
-		key := g.ShowScene(scn, 0)
+		key := g.showScene(ctx, scn, 0)
 		c, _ := cmd.KeyToMenuCmd(key)
 		if result := cmd.HandleOptionsCmd(c, opt); result == cmd.HandleResultSelectionFinished {
 			return

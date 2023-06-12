@@ -3,27 +3,21 @@ package game
 import (
 	"context"
 	"fmt"
-	"time"
 
 	cmd "github.com/ubntc/go/games/gotris/game/controls"
 	"github.com/ubntc/go/games/gotris/game/scenes"
 )
 
-func (g *Game) handleCommonCommand(c cmd.Cmd) (quit, ok bool) {
+func (g *Game) handleHelpAndQuit(ctx context.Context, c cmd.Cmd) (quit, ok bool) {
 	switch c {
 	case cmd.Help:
-		g.showHelp()
+		g.showHelp(ctx)
+		return false, true // do not quit + handled command
 	case cmd.Empty, cmd.Quit:
-		quit = true
+		return true, true // do quit + handled command
 	default:
-		return false, false
+		return false, false // do not quit + did not handle command
 	}
-	return quit, true
-}
-
-func hint[K any](v ...K) {
-	fmt.Printf("%v\n", v)
-	time.Sleep(time.Second)
 }
 
 func (g *Game) showWelcome(ctx context.Context) {
@@ -37,10 +31,11 @@ func (g *Game) showWelcome(ctx context.Context) {
 		default:
 		}
 
-		key := g.ShowScene(welcome, 0)
+		key := g.showScene(ctx, welcome, 0)
+		fmt.Println(key)
 		c, _ := cmd.KeyToMenuCmd(key)
 
-		if quit, ok := g.handleCommonCommand(c); ok {
+		if quit, ok := g.handleHelpAndQuit(ctx, c); ok {
 			if quit {
 				return
 			}
@@ -51,12 +46,12 @@ func (g *Game) showWelcome(ctx context.Context) {
 			switch opts.GetName() {
 			case scenes.START:
 				if err := g.GameLoop(ctx); err != nil {
-					g.gameOver()
+					g.gameOver(ctx)
 				}
 			case scenes.OPTIONS:
-				g.showOptions()
+				g.showOptions(ctx)
 			case scenes.CONTROLS:
-				g.showHelp()
+				g.showHelp(ctx)
 			case scenes.QUIT:
 				return
 			}

@@ -1,7 +1,11 @@
 package game
 
-import "github.com/ubntc/go/games/gotris/game/scenes"
+import (
+	"context"
 
-func (g *Game) gameOver() {
-	g.ShowScene(scenes.New(scenes.TitleGameOver), g.GameOverScreenDuration)
+	"github.com/ubntc/go/games/gotris/game/scenes"
+)
+
+func (g *Game) gameOver(ctx context.Context) {
+	g.showScene(ctx, scenes.New(scenes.TitleGameOver), g.GameOverScreenDuration)
 }

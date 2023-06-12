@@ -1,9 +1,11 @@
 package controls
 
-import "github.com/ubntc/go/games/gotris/input"
+import (
+	"github.com/ubntc/go/games/gotris/input"
+)
 
-func InputToCmd(in *input.Input) (c Cmd, arg string) {
-	if in == nil {
+func InputToCmd(in input.Input) (c Cmd, arg string) {
+	if in.IsEmpty() {
 		return
 	}
 
@@ -51,8 +53,8 @@ func InputToCmd(in *input.Input) (c Cmd, arg string) {
 	return
 }
 
-func KeyToMenuCmd(in *input.Input) (cmd Cmd, arg string) {
-	if in == nil {
+func KeyToMenuCmd(in input.Input) (cmd Cmd, arg string) {
+	if in.IsEmpty() {
 		return
 	}
 

@@ -1,4 +1,4 @@
-package game
+package tiles
 
 import (
 	"math/rand"
@@ -53,14 +53,24 @@ type Tile struct {
 	center      int
 }
 
-func NewTile(typ Typ, x, y int) *Tile {
-	points, ori, center := PointsForType(typ, geometry.DirUp)
-	return &Tile{
+// create is used to create (internal copies of) Tile structs.
+func create(typ Typ, ori geometry.Dir, points []geometry.Point, center int) Tile {
+	return Tile{
 		typ:         typ,
 		orientation: ori,
-		points:      geometry.OffsetPointsXY(points, x, y),
+		points:      points,
 		center:      center,
 	}
+}
+
+func NewTile(typ Typ, x, y int) *Tile {
+	points, ori, center := PointsForType(typ, geometry.DirUp)
+	t := create(typ, ori, geometry.OffsetPointsXY(points, x, y), center)
+	return &t
+}
+
+func (t *Tile) Orientation() geometry.Dir {
+	return t.orientation
 }
 
 func (t *Tile) Points() []geometry.Point {
@@ -73,11 +83,26 @@ func (t *Tile) SetPoints(points []geometry.Point, ori geometry.Dir, center int) 
 	t.center = center
 }
 
+func (t *Tile) Update(copyFrom Tile) {
+	t.typ = copyFrom.typ
+	t.orientation = copyFrom.orientation
+	t.points = copyFrom.points
+	t.center = copyFrom.center
+}
+
+func (t *Tile) Shift(dx, dy int) {
+	t.points = geometry.OffsetPointsXY(t.points, dx, dy)
+}
+
 func (t *Tile) Orientations() []string {
 	return Drawings[t.typ]
 }
 
-func (t *Tile) RotatedPoints(spin geometry.Spin) (points []geometry.Point, orientation geometry.Dir, center int) {
+func (t *Tile) Moved(dir geometry.Dir) Tile {
+	return create(t.typ, t.orientation, geometry.OffsetPointsDir(t.Points(), dir), t.center)
+}
+
+func (t *Tile) Rotated(spin geometry.Spin) Tile {
 	oris := t.Orientations()
 	numOris := geometry.Dir(len(oris))
 	ori := geometry.Dir(t.orientation)
@@ -95,7 +120,7 @@ func (t *Tile) RotatedPoints(spin geometry.Spin) (points []geometry.Point, orien
 	x, y := t.Position()
 	points = geometry.OffsetPointsXY(points, x, y)
 
-	return points, dir, center
+	return create(t.typ, dir, points, center)
 }
 
 func (t *Tile) Center() geometry.Point {

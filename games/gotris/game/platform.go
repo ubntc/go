@@ -12,7 +12,7 @@ type Platform interface {
 	// CaptureInput starts capturing input. It returns an input channel, where all input is
 	// sent through, a stopCapture func to stop capturing after the game stops, and an error
 	// to indicate that capturing is not possiible.
-	CaptureInput(ctx context.Context) (input <-chan *input.Input, stopCapture func(), err error)
+	CaptureInput(ctx context.Context) (input <-chan input.Input, stopCapture func(), err error)
 
 	// ShowMessage shows a generic info message to the user.
 	ShowMessage(message string)

@@ -18,7 +18,7 @@ func TestKeyToCmd(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCmd, gotOk := cmd.InputToCmd(tt.in)
+			gotCmd, gotOk := cmd.InputToCmd(*tt.in)
 			if gotCmd != tt.wantCmd {
 				t.Errorf("KeyToCmd() gotCmd = %v, want %v", gotCmd, tt.wantCmd)
 			}

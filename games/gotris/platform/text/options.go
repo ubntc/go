@@ -12,5 +12,5 @@ type RenderingOptions struct {
 // modes when the option changes.
 func (o *RenderingOptions) Set(i int) {
 	o.MemStore.Set(i)
-	o.p.SetRenderingMode(o.GetName())
+	_ = o.p.SetRenderingMode(o.GetName())
 }

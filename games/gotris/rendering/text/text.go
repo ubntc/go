@@ -7,6 +7,7 @@ import (
 
 	"github.com/ubntc/go/games/gotris/game"
 	"github.com/ubntc/go/games/gotris/game/geometry"
+	"github.com/ubntc/go/games/gotris/game/tiles"
 	"github.com/ubntc/go/games/gotris/rendering/text/arts"
 	"github.com/ubntc/go/games/gotris/rendering/text/modes"
 )
@@ -51,8 +52,9 @@ func Render(g *game.Game) (rows []string) {
 		res = append(res, row)
 	}
 
-	padTop := make([]string, g.BoardPos.H)
-	padLeft := strings.Repeat(" ", g.BoardPos.W)
+	pos := g.BoardPos
+	padTop := make([]string, pos.H)
+	padLeft := strings.Repeat(" ", pos.W)
 
 	for i := range res {
 		res[i] = padLeft + res[i]
@@ -91,7 +93,7 @@ func RenderPreview(g *game.Game) []string {
 
 func RenderBoard(g *game.Game) (rows []string) {
 	blocks := g.Board.Copy()
-	game.MergeTile(g.CurrentTile, blocks)
+	tiles.MergeTile(g.CurrentTile, blocks)
 	return RenderBlocks(blocks, g.BoardSize.W, g.BoardSize.H)
 }
 

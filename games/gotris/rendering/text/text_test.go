@@ -6,14 +6,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/ubntc/go/games/gotris/game"
-	"github.com/ubntc/go/games/gotris/game/rules"
 )
 
 func TestRendering(t *testing.T) {
 	assert := assert.New(t)
 
-	g := game.NewGame(rules.TestRules, nil)
-	g.CaptureInput = false
+	g := game.NewGame(game.TestConfig, nil)
+	g.DisableInput()
 	step := 0
 	for {
 		step += 1

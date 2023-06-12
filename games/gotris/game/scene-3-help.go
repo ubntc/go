@@ -1,7 +1,11 @@
 package game
 
-import "github.com/ubntc/go/games/gotris/game/scenes"
+import (
+	"context"
 
-func (g *Game) showHelp() {
-	g.ShowScene(scenes.New(scenes.TitleControls), 0)
+	"github.com/ubntc/go/games/gotris/game/scenes"
+)
+
+func (g *Game) showHelp(ctx context.Context) {
+	g.showScene(ctx, scenes.New(scenes.TitleControls), 0)
 }

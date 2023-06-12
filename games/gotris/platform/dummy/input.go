@@ -8,7 +8,7 @@ import (
 	"github.com/ubntc/go/games/gotris/terminal"
 )
 
-func (p *Platform) CaptureInput(ctx context.Context) (<-chan *input.Input, func(), error) {
+func (p *Platform) CaptureInput(ctx context.Context) (<-chan input.Input, func(), error) {
 	t := terminal.New(os.Stdout)
 	return t.CaptureInput(ctx)
 }

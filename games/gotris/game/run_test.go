@@ -7,7 +7,6 @@ import (
 
 	"github.com/ubntc/go/games/gotris/game"
 	"github.com/ubntc/go/games/gotris/game/options"
-	"github.com/ubntc/go/games/gotris/game/rules"
 	"github.com/ubntc/go/games/gotris/game/scenes"
 	"github.com/ubntc/go/games/gotris/input"
 )
@@ -17,7 +16,7 @@ type Platform struct{}
 func (r *Platform) Render(game *game.Game)          {}
 func (r *Platform) RenderScene(scene *scenes.Scene) {}
 func (r *Platform) ShowMessage(text string)         {}
-func (r *Platform) CaptureInput(context.Context) (<-chan *input.Input, func(), error) {
+func (r *Platform) CaptureInput(context.Context) (<-chan input.Input, func(), error) {
 	return nil, nil, nil
 }
 func (p *Platform) Options() options.Options { return nil }
@@ -31,8 +30,8 @@ func TestLoop(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	p := &Platform{}
-	g := game.NewGame(rules.TestRules, p)
-	g.CaptureInput = false
+	g := game.NewGame(game.TestConfig, p)
+	g.DisableInput()
 	go g.Run(ctx)
 	p.Run(ctx)
 }

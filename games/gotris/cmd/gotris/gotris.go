@@ -30,7 +30,8 @@ func main() {
 	case PlatformDummy:
 		p = dummy.NewPlatform()
 	}
-	g := game.NewGame(rules.DefaultRules, p)
+
+	g := game.NewGame(game.GameConfig{Rules: rules.DefaultRules}, p)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
