@@ -1,6 +1,6 @@
 # Image Processing Scripts
 
-This project contains scripts and research results for some image processing needs I encounterd here and there.
+This project contains scripts and research results for some image processing needs I encountered here and there.
 
 All code is provided as is and may not represent any state of the art in computer vision. Feel free to open an issue here to teach me how I can improve my approaches.
 

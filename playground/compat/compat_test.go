@@ -43,7 +43,7 @@ func TestUseEnumNumbers(t *testing.T) {
 	err = unmarshaller.Unmarshal(b, msg)
 	assert.NoError(err)
 	v = string(b)
-	fmt.Println("modifed + unmarshalled  payload:", v)
+	fmt.Println("modifed + unmarshalled payload:", v)
 
 	switch msg.Type {
 	case 0, 1, 2:

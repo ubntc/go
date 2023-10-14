@@ -7,7 +7,7 @@ clean:
 	rm face.jpg face.raw
 
 face.raw:
-	python3 generate.py
+	python generate.py
 
 run: face.raw
-	python3 transform.py
+	python transform.py
