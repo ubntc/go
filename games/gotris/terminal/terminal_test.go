@@ -15,7 +15,7 @@ func TestClear(t *testing.T) {
 
 	dummyout, err := os.Open(os.DevNull)
 	assert.NoError(t, err)
-	term := New(dummyout)
+	term := NewTerminal(dummyout)
 
 	term.Print(term.ClearString())
 	term.RunClearCommand()
@@ -43,7 +43,7 @@ func TestClear(t *testing.T) {
 }
 
 func TestTerminal(_ *testing.T) {
-	t := New(os.Stdout)
+	t := NewTerminal(os.Stdout)
 	defer t.ShowCursor()
 	t.HideCursor()
 	t.Print("test")

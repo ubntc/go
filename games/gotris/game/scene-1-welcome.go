@@ -2,8 +2,6 @@ package game
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/ubntc/go/games/gotris/common/labels"
 	"github.com/ubntc/go/games/gotris/common/options"
@@ -23,10 +21,10 @@ func (g *Game) handleCommonCommand(c cmd.Cmd) (quit, ok bool) {
 	return quit, true
 }
 
-func hint[K any](v ...K) {
-	fmt.Printf("%v\n", v)
-	time.Sleep(time.Second)
-}
+// func hint[K any](v ...K) {
+// 	fmt.Printf("%v\n", v)
+// 	time.Sleep(time.Second)
+// }
 
 func (g *Game) showWelcome(ctx context.Context) {
 	welcome := scenes.NewMenu(

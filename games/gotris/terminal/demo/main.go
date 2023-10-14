@@ -16,7 +16,7 @@ import (
 // }
 
 func main() {
-	t := terminal.New(os.Stdout)
+	t := terminal.NewTerminal(os.Stdout)
 	input, restore, err := t.CaptureInput(context.Background())
 	if err != nil {
 		panic(err)

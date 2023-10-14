@@ -12,7 +12,7 @@ var welcome = Colorize(`
           MENU_ITEMS
 
 ╭[i]────────────────────────────────────────────────╮
-│ ©2022 @ubunatic. Made by with ♡ in Saxony.        │
+│ ©2023 @ubunatic. Made by with ♡ in Saxony.        │
 │ Code at https://github.com/ubntc/go/games/gotris. │
 ╰───────────────────────────────────────────────────╯
 `, "♡", Bold_Red)

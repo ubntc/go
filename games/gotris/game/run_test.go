@@ -22,7 +22,7 @@ func (r *Platform) CaptureInput(context.Context) (<-chan *input.Input, func(), e
 }
 func (p *Platform) Options() options.Options { return nil }
 
-func (p *Platform) SetRenderingMode(string) error   { return nil }
+// func (p *Platform) SetRenderingMode(string) error   { return nil }
 func (p *Platform) RenderingModes() ([]string, int) { return nil, 0 }
 func (p *Platform) RenderingInfo(string) string     { return "" }
 func (p *Platform) Run(ctx context.Context)         { <-ctx.Done() }
