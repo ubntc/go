@@ -44,11 +44,8 @@ func init() {
 	}
 }
 
-func RandomTileType() geometry.Typ {
-	i := rand.Int() % len(Tiles)
-	return Tiles[i].Typ
-}
-
-func RandomTile() *geometry.Tile {
-	return geometry.NewTile(RandomTileType(), 0, 0, drawings)
+func RandomTile(rng *rand.Rand) *geometry.Tile {
+	i := rng.Int() % len(Tiles)
+	typ := Tiles[i].Typ
+	return geometry.NewTile(typ, 0, 0, drawings)
 }

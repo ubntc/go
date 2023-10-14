@@ -6,12 +6,12 @@ import (
 
 	"github.com/ubntc/go/games/gotris/game"
 	"github.com/ubntc/go/games/gotris/game/rules"
-	"github.com/ubntc/go/games/gotris/ui/text"
+	"github.com/ubntc/go/games/gotris/textui"
 )
 
 func main() {
 	flag.Parse()
-	ui := text.NewTextUI()
+	ui := textui.NewTextUI()
 	g := game.NewGame(rules.DefaultRules, ui)
 
 	ctx, cancel := context.WithCancel(context.Background())

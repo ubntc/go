@@ -1,4 +1,4 @@
-package text
+package textui
 
 import (
 	"strings"
@@ -15,9 +15,10 @@ func TestRendering(t *testing.T) {
 	g := game.NewGame(rules.TestRules, nil)
 	g.CaptureInput = false
 	step := 0
+	ui := NewTextUI()
 	for {
 		step += 1
-		out := Render(g.Game)
+		out := ui.RenderGame(g.Game)
 		t.Log("text rendering, step", step, "\n"+strings.Join(out, "\n"))
 		assert.Len(out, g.BoardSize.H+3)
 		if step == 10 {

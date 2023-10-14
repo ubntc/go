@@ -27,6 +27,8 @@ type Game struct {
 	CaptureInput bool
 
 	input <-chan *input.Input
+
+	rand *rand.Rand
 }
 
 func NewGame(gameRules platform.Rules, renderngPlatform platform.Platform) *Game {
@@ -50,9 +52,9 @@ func (g *Game) Init() {
 
 	switch g.Seed {
 	case rules.SeedRandom:
-		rand.Seed(time.Now().Unix())
+		g.rand = rand.New(rand.NewSource(time.Now().Unix()))
 	default:
-		rand.Seed(int64(g.Seed))
+		g.rand = rand.New(rand.NewSource(int64(g.Seed)))
 	}
 	g.SpawnTile()
 }
@@ -61,11 +63,11 @@ func (g *Game) Init() {
 // and creates a tile in the preview.
 func (g *Game) SpawnTile() {
 	if g.NextTile == nil {
-		g.NextTile = RandomTile()
+		g.NextTile = RandomTile(g.rand)
 	}
 	// get next tile and create a new one
 	t := g.NextTile
-	g.NextTile = RandomTile()
+	g.NextTile = RandomTile(g.rand)
 
 	// move tile to the board
 	dx := g.BoardSize.W / 2
@@ -226,8 +228,8 @@ func (g *Game) RunCommand(command cmd.Cmd, arg string) error {
 	}
 	switch command {
 	case cmd.Drop:
-		g.Drop(g.CurrentTile)
-		g.Advance()
+		_ = g.Drop(g.CurrentTile)
+		_ = g.Advance()
 	case cmd.Help:
 		g.showHelp()
 	case cmd.Options:

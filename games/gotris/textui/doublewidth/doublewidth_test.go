@@ -3,11 +3,11 @@ package doublewidth_test
 import (
 	"testing"
 
-	"github.com/ubntc/go/games/gotris/ui/text/doublewidth"
+	"github.com/ubntc/go/games/gotris/textui/doublewidth"
 )
 
 func TestTextToBlock(t *testing.T) {
-	art := doublewidth.New()
+	dw := doublewidth.New()
 	puncts := ",.-;:_#'+*^!\"$%&/()=?"
 	tests := []struct {
 		name string
@@ -20,7 +20,7 @@ func TestTextToBlock(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := art.TextToBlock(tt.text); got != tt.want {
+			if got := dw.TextToBlock(tt.text); got != tt.want {
 				t.Errorf("TextToBlock() = %v, want %v", got, tt.want)
 			}
 		})

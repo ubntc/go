@@ -7,6 +7,8 @@ type MemStore struct {
 	Descriptions  []string
 	values        map[string]string
 	currentOption int
+
+	changed chan bool
 }
 
 func NewMemStore(names []string, descs []string) *MemStore {
@@ -14,6 +16,7 @@ func NewMemStore(names []string, descs []string) *MemStore {
 		Options:      names,
 		Descriptions: descs,
 		values:       make(map[string]string),
+		changed:      make(chan bool, 1),
 	}
 }
 
@@ -33,7 +36,13 @@ func (s *MemStore) Set(idx int) {
 	if idx >= len(s.Options) || idx < 0 {
 		panic("options index ouf of bounds")
 	}
-	s.currentOption = idx
+	if idx != s.currentOption {
+		s.currentOption = idx
+		select {
+		case s.changed <- true:
+		default:
+		}
+	}
 }
 
 func (s *MemStore) Get() int {
@@ -57,4 +66,8 @@ func (s *MemStore) SetValue(key, value string) {
 
 func (s *MemStore) GetValue(key string) string {
 	return s.values[key]
+}
+
+func (s *MemStore) Changed() <-chan bool {
+	return s.changed
 }

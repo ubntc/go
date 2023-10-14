@@ -3,11 +3,11 @@ package fullwidth_test
 import (
 	"testing"
 
-	"github.com/ubntc/go/games/gotris/ui/text/fullwidth"
+	"github.com/ubntc/go/games/gotris/textui/fullwidth"
 )
 
 func TestFullwidthTextTranslation(t *testing.T) {
-	art := fullwidth.New()
+	fw := fullwidth.New()
 	tests := []struct {
 		name string
 		text string
@@ -29,7 +29,7 @@ func TestFullwidthTextTranslation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := art.TextToBlock(tt.text); got != tt.want {
+			if got := fw.TextToBlock(tt.text); got != tt.want {
 				t.Errorf("TextToBlock() = %v, want %v", got, tt.want)
 			}
 		})

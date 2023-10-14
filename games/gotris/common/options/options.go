@@ -8,6 +8,8 @@ package options
 type Options interface {
 	Select
 	Map
+
+	Changed() <-chan bool
 }
 
 type Select interface {

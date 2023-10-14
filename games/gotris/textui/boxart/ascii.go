@@ -1,6 +1,4 @@
-package arts
-
-import "strings"
+package boxart
 
 const (
 	Block_LeftHalf      = "▌"
@@ -16,5 +14,3 @@ const (
 	Block_LeftEights_7 = "▉"
 	Block_LeftEights_8 = "█"
 )
-
-var Blocks_LeftEights = strings.Split("▏▎▍▌▋▊▉█", "")

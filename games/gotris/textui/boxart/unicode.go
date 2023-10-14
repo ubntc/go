@@ -1,4 +1,4 @@
-package arts
+package boxart
 
 const (
 	Block_BigFrame         = "▏̲̅▕̲̅" // <--X̲̅X̲̅X̲̅ combining marks

@@ -6,13 +6,12 @@
 
 # Sources and Binaries
 # --------------------
-project := $(notdir $(shell pwd))
+project := $(notdir $(CURDIR))
 main = $(project).go
 binary = bin/$(project)
-sources = $(shell find . -name '*.go') $(wildcard go.*) $(main)
+sources = $(shell find . -name '*.go' -o -name 'go.*')
 
-$(binary): $(sources)
-	go build -o $@ $(main)
+$(binary): $(sources); go build -o $@ $(main)
 
 # Common Targets
 # --------------

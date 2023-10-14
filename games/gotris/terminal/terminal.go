@@ -31,8 +31,8 @@ type Terminal struct {
 	stdin  *os.File
 }
 
-// New returns a new terminal for the given file descriptor.
-func New(stdout *os.File) *Terminal {
+// NewTerminal returns a new terminal for the given file descriptor.
+func NewTerminal(stdout *os.File) *Terminal {
 	return &Terminal{stdout, os.Stdin}
 }
 
