@@ -18,7 +18,7 @@ var runTime = flag.Duration("t", 3*time.Second, "runtime of the demo")
 func sendMsg(ctx context.Context, ch chan<- string) {
 	time.Sleep(time.Duration(rand.Uint32()) % *runTime)
 	select {
-	case ch <- fmt.Sprintf(time.Now().Format("2006-01-02 15:04:05.999")):
+	case ch <- time.Now().Format(time.DateTime + ".999"):
 	case <-ctx.Done():
 	}
 }
