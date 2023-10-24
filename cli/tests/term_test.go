@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/ubntc/go/cli/cli"
+	"github.com/ubntc/go/cli/cli/config"
 )
 
 func TestPrompt(t *testing.T) {
@@ -36,7 +37,7 @@ func TestHelp(t *testing.T) {
 	cli.SetCommands(cli.Commands{cli.Command{Name: "X", Key: 'x'}})
 	term := cli.GetTerm()
 	w := &LogWriter{}
-	term.WrapOutput(w)
+	term.SetOutput(w)
 	term.Help()
 	s := w.String()
 	assert.Contains(t, s, "Key: 'x'")
@@ -44,7 +45,10 @@ func TestHelp(t *testing.T) {
 }
 
 func TestQuitCommandsWithoutClock(t *testing.T) {
-	ctx, cancel := cli.WithSigWait(context.Background(), cli.WithQuit(), cli.WithoutClock())
+	cfg := config.Default(false)
+	cfg.ShowClock = false
+	cfg.WithQuit = true
+	ctx, cancel := cli.StartTerm(context.Background(), cfg)
 	assert.Len(t, cli.GetCommands(), 4)
 	cancel()
 	<-ctx.Done()
@@ -61,9 +65,12 @@ func TestCommandsWithClock(t *testing.T) {
 	term, release := cli.AcquireTerm()
 	defer release()
 	w := &LogWriter{}
-	term.WrapOutput(w)
+	term.SetOutput(w)
 
-	ctx, cancel := cli.WithSigWait(pctx, cli.WithInput(cmds))
+	cfg := config.Server()
+	cfg.ShowClock = true
+	cfg.WithQuit = true
+	ctx, cancel := cli.StartTerm(pctx, cfg, cmds...)
 	defer cancel()
 
 	assert.Len(t, cli.GetCommands(), 5)
@@ -116,7 +123,7 @@ func TestWrappedOutput(t *testing.T) {
 	term, release := cli.AcquireTerm()
 	defer release()
 	w := &LogWriter{}
-	term.WrapOutput(w)
+	term.SetOutput(w)
 
 	// fmt.Printf("terminal raw mode: %v\n", term.IsRaw())
 
@@ -140,7 +147,7 @@ func TestWrappedOutputConcurrent(t *testing.T) {
 	term, release := cli.AcquireTerm()
 	defer release()
 	w := &LogWriter{}
-	term.WrapOutput(w)
+	term.SetOutput(w)
 	var wg sync.WaitGroup
 
 	flush := func() { term.Sync() }
@@ -193,7 +200,7 @@ func TestWrapStderr(t *testing.T) {
 }
 
 func TestSliceIndexPlus1(t *testing.T) {
-	var buf = []byte("abc")
+	buf := []byte("abc")
 	assert.Len(t, buf, 3)
 	assert.Len(t, buf[len(buf):], 0)
 }

@@ -1,12 +1,15 @@
 package cli
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 // Command define a command.
 type Command struct {
 	Name string
 	Key  rune
-	Fn   func()
+	Fn   func(context.Context)
 }
 
 // CommandInfoFormatter formats a command.
@@ -24,9 +27,9 @@ func inlineFormatter(c Command) string {
 }
 
 // Run runs the command and sets the Prompt to indicate that the command was run.
-func (c *Command) Run() {
-	Prompt("Running command: %s (%q)", c.Name, c.Key)
-	c.Fn()
+func (c *Command) Run(ctx context.Context) {
+	c.Fn(ctx)
+	Prompt("Last command: %s (%q)", c.Name, c.Key)
 }
 
 // StartsWithKey tells if a command name starts with the command key.

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-set -e
+set -o errexit
 
-cd `dirname $0`  # make sure we are in the right dir
+cd "$(dirname "$0")"  # make sure we are in the right dir
 
 demo=server_demo
 proc=server
@@ -14,9 +14,11 @@ case "$1" in
     *)   dir=examples/zerolog; demo=commands_demo;;
 esac
 
+gomain="$dir/$proc.go"
+
 write() {
     for w in $1; do
-        echo "$w" | grep -o . | cat | while read char; do
+        echo "$w" | grep -o . | cat | while read -r char; do
             echo -n "$char"
             sleep 0.02
         done
@@ -25,37 +27,59 @@ write() {
     test -z "$2" || sleep "$2"
     echo ""
 }
-autokill() { 
-    (sleep 3.1; kill `pgrep $proc`)& >/dev/null
-    "$@"
+
+killserver() {
+    sleep 1
+    pids="$(pgrep -f "go-build.*/exe/server")"
+    # echo "waiting for $gomain PIDs: $pids"
+    sleep 2.1
+    for pid in $pids; do
+        kill "$pid" || true
+    done 1> /dev/null 2> /dev/null
 }
-msg() { write "# $1" $2; }
-cmd() { write "$*" 1; autokill "$@"; }
+
+msg()      { write "# $1" "$2"; }
+cmd()      { write "$*" 1; "$@"; }
+linenum()  { grep -n "$1" "$2" | cut -d: -f1; }
+server()   {
+    write "go run $gomain $*" 1
+    killserver&
+    go run "$gomain" "$@"
+}
+
+show_code() {
+    start="$(linenum "if \*interactive" "$gomain")"
+    end="$(linenum "cli\.WithSigWait" "$gomain")"
+    cmd bat -P "$gomain" -r "$start:$end"
+}
 
 server_demo() {
-    msg "With a few lines of code Go-cli provides readable colored CLI logs:" 1
-    cmd go run $dir/$proc.go -i
-
+    msg "See how easy it is to setup colored logging and interactivity using Go-cli:" 0.5
+    show_code
+    server -i
     msg "In production we just turn it off:" 1
-    cmd go run $dir/$proc.go
+    server
     msg "This was a regular run, stopped with CTRL-C." 1
 
     msg "In interactive mode we can stop with Q, q, CTRL-C, CTRL-D." 1
-    cmd go run $dir/$proc.go -i
+    server -i
 
-    write "go run $dir/$proc.go -i" 1
-    msg "Watch the clock seconds!" 1
+    msg "Watch the clock seconds ticking on the bottom line!" 1
     echo "#                |"
     echo "#                |"
     echo "#                V"
-    autokill go run $dir/$proc.go -i
-
+    server -i
+    msg "Again!" 1
+    server -i
     msg "Wow, that's awesome!" 1
+
     msg "--------------------------------------"
     msg "Go-cli:" 1
+
     msg "- easy handling of OS signals" 1
     msg "- easy setup of optional friendly logs"  1
     msg "- easy setup of keyboard commands"  1
+    msg "- graceful handling of raw terminals"  1
     msg "--------------------------------------"
     msg "" 7
     msg "Good bye!"  1
@@ -63,7 +87,8 @@ server_demo() {
 
 commands_demo() {
     msg "Demo app with (h)elp, (s)tatus, and (q)uit commands:"
-    go run $dir/$proc.go -i -debug -demo 3h3s3q
+    show_code
+    go run $gomain -i -debug -demo 3h3s3q
     write "" 5
 }
 

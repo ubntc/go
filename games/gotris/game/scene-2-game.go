@@ -12,8 +12,10 @@ import (
 func (g *Game) GameLoop(ctx context.Context) error {
 	var lastErr error
 	var msg string
+
 	ticker := time.NewTicker(g.TickTime)
 	defer ticker.Stop()
+
 	for {
 		g.Platform.Render(g.Game)
 		if lastErr != nil {

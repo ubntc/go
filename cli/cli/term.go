@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/crypto/ssh/terminal"
+	xterm "golang.org/x/term"
 )
 
 // Term stores shared terminal state about loggers, the underlying terminals, and commands.
@@ -20,7 +20,7 @@ type Term struct {
 	verbose    bool
 	raw        bool
 	mu         sync.RWMutex
-	clock      Clock
+	clock      clock
 	commands   Commands
 	buf        []byte // last received bytes received from external writers
 	statusLine string // current status line text
@@ -32,9 +32,7 @@ type Term struct {
 var term = Term{
 	out: os.Stderr,
 	// the global Clock
-	clock: Clock{
-		timeFormat: TimeFormatHuman,
-	},
+	clock: Clock(clockClock),
 	// global commands
 	commands: Commands{},
 }
@@ -103,18 +101,20 @@ func (c *Term) Help() {
 	c.Println(GetCommands().Help())
 }
 
-// WrapOutput wraps the given output.
-func (c *Term) WrapOutput(w io.Writer) {
+// SetOutput set the Term's output.
+func (c *Term) SetOutput(w io.Writer) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.out = w
 }
 
 // var reLineEnd = regexp.MustCompile("\n$")
-var rePendingNL = regexp.MustCompile("[^\n]*$")
-var reStartCR = regexp.MustCompile("[\r]*")
-var reNLCR = regexp.MustCompile("[\n\r]*")
-var reNLWithoutCR = regexp.MustCompile("[\n][^\r]*")
+var (
+	rePendingNL   = regexp.MustCompile("[^\n]*$")
+	reStartCR     = regexp.MustCompile("[\r]*")
+	reNLCR        = regexp.MustCompile("[\n\r]*")
+	reNLWithoutCR = regexp.MustCompile("[\n][^\r]*")
+)
 
 // TODO: what is safer/faster regex check or last bytes check?
 // var nlByte = []byte("\n")[0]
@@ -193,12 +193,11 @@ const (
 // The internal `write` writes the collected `input` followed by the `statusLine`.
 // The following cases need to be handled:
 //
-//    input buffer    prompt status    action
-//    ---------------------------------------
-//    empty           unchanged        non
-//    empty           updated          clear + print status
-//    has data        any              clear + print input and status
-//
+//	input buffer    prompt status    action
+//	---------------------------------------
+//	empty           unchanged        non
+//	empty           updated          clear + print status
+//	has data        any              clear + print input and status
 func (c *Term) write() {
 	output, pending := c.printableOutput()
 	if len(output) == 0 && c.statusLine == c.lastLine {
@@ -236,14 +235,14 @@ func (c *Term) write() {
 	}
 
 	buf = append(buf, []byte(c.statusLine)...)
-	c.out.Write(buf)
+	_, _ = c.out.Write(buf)
 	c.buf = pending
 	c.lastLine = c.statusLine
 }
 
 // clearString returns a string to clear the complete line.
 func (c *Term) clearString() string {
-	if w, _, err := terminal.GetSize(0); err == nil && w > 0 {
+	if w, _, err := xterm.GetSize(0); err == nil && w > 0 {
 		return fmt.Sprintf("\r%s\r", strings.Repeat(" ", w))
 	}
 	return ClearAll
@@ -266,10 +265,12 @@ func (c *Term) IsRaw() bool {
 // StartClock starts the terminal clock to ingest clock output into the status line.
 func (c *Term) StartClock(ctx context.Context) {
 	PromptVerbose("starting clock")
-	out := c.GetClock().Start(ctx, 100*time.Millisecond)
+	interval := 100 * time.Millisecond
+	ticker := time.NewTicker(interval)
 	for {
 		select {
-		case dt := <-out:
+		case <-ticker.C:
+			dt := c.clock.DisplayTime(interval)
 			if dt != nil {
 				c.Prompt(dt.digital, c.GetMessage(), dt.analog, "")
 			}
@@ -282,6 +283,6 @@ func (c *Term) StartClock(ctx context.Context) {
 }
 
 // GetClock returns the global clock.
-func (c *Term) GetClock() *Clock {
+func (c *Term) GetClock() *clock {
 	return &c.clock
 }

@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -48,7 +47,8 @@ func (w *LogWriter) Quote() string {
 }
 
 var tfLen = len(cli.TimeFormatHuman)
-var clrMatch = regexp.MustCompile("^\r *\r$")
+
+// var clrMatch = regexp.MustCompile("^\r *\r$")
 var emptyMatch = regexp.MustCompile("^ *$")
 
 // Time returns the time in the current output line.
@@ -76,9 +76,9 @@ lines:
 	return time.Parse(cli.TimeFormatHuman, s[:tfLen])
 }
 
-// tempFile creates a temp file.
-func tempFile(t *testing.T, content string) (*os.File, func()) {
-	f, err := ioutil.TempFile(os.TempDir(), "gocli")
+// TempFile creates a temp file.
+func TempFile(t *testing.T, content string) (*os.File, func()) {
+	f, err := os.CreateTemp(os.TempDir(), "gocli")
 	remove := func() {
 		assert.NoError(t, os.Remove(f.Name()))
 	}

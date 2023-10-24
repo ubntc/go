@@ -27,7 +27,7 @@ func (c Commands) String() string {
 
 // Help returns the command names and keys, one command per line.
 func (c Commands) Help() string {
-	res := append([]string{"Keyboard Commands:"}, c.Info(helpFormatter)...)
+	res := append([]string{"\n\rKeyboard Commands:"}, c.Info(helpFormatter)...)
 	return strings.Join(res, "\n\r  ")
 }
 
@@ -58,9 +58,7 @@ func (c Commands) Run(r rune) error {
 
 // RunScript runs the given script with the Commands.
 func (c Commands) RunScript(s string) error {
-	//lint:ignore S1029 must use runes
-	//lint:ignore SA6003 must use runes
-	for _, r := range []rune(s) {
+	for _, r := range s {
 		num := int(r - '0')
 		switch {
 		case num >= 0 && num < 10:

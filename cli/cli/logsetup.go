@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 // Supported logger types
 const (
 	// TimeFormatHuman is the only reasonable time format for human readability.
-	TimeFormatHuman = "2006-01-02 15:04:05"
-	ClearAll        = "\r                                                                                          \r"
+	TimeFormatHuman = time.DateTime
+	// ClearAll is a fallback clear string.
+	ClearAll = "\r                                                                                          \r"
 )
 
 // LogSetupFunc configures a specific Logger.
@@ -30,7 +32,7 @@ func SetupLogging(setup LogSetupFunc) {
 	// Writing log lines to the term first clears the interactive line
 	// before the actual log line is written.
 	term := GetTerm()
-	term.WrapOutput(&stdErrWrapper{})
+	term.SetOutput(&stdErrWrapper{})
 
 	if err := setup(term, TimeFormatHuman); err != nil {
 		os.Stderr.WriteString(fmt.Sprintf("failed to setup logger, error: %v\n", err))

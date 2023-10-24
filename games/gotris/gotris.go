@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 
 	"github.com/ubntc/go/games/gotris/game"
 	"github.com/ubntc/go/games/gotris/game/rules"
@@ -10,7 +9,6 @@ import (
 )
 
 func main() {
-	flag.Parse()
 	ui := textui.NewTextUI()
 	g := game.NewGame(rules.DefaultRules, ui)
 

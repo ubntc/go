@@ -1,59 +1,47 @@
 package cli
 
 import (
-	"context"
 	"strings"
-	"sync"
 	"time"
 )
 
-// Clock stores the current clock step and text.
-type Clock struct {
+// clock stores the current clock step and text.
+type clock struct {
 	timeFormat string
-	runLock    sync.Mutex // ensures only one clock runs concurrently
+	clockRunes []string
 }
 
-// DisplayTime defines the visible values for a time.
-type DisplayTime struct {
+// displayTime defines the visible values for a time.
+type displayTime struct {
 	time.Time
 	digital string
 	analog  string
 }
 
-var (
-	// asciiClock     = strings.Split("/ - \\ |", " ")
-	brailleClock = strings.Split("⢎⡰ ⢎⡡ ⢎⡑ ⢎⠱ ⠎⡱ ⢊⡱ ⢌⡱ ⢆⡱", " ")
-	// brailleSpinner = strings.Split(" ⠁| ⠑| ⠰| ⡰|⢀⡠|⢄⡠|⢆⡀|⢎⡀|⢎ |⠎ |⠊ |⠈ ", "|")
+// nolint
+// unicode art clock spinners
+const (
+	asciiClock     = "/:﹣:\\:|"
+	clockClock     = "🕛:🕐:🕑:🕒:🕓:🕔:🕕:🕖:🕗:🕘:🕙:🕚"
+	brailleClock   = "⢎⡰:⢎⡡:⢎⡑:⢎⠱:⠎⡱:⢊⡱:⢌⡱:⢆⡱"
+	brailleSpinner = " ⠁: ⠑: ⠰: ⡰:⢀⡠:⢄⡠:⢆⡀:⢎⡀:⢎ :⠎ :⠊ :⠈ "
 )
 
-// Start starts the clock.
-func (c *Clock) Start(ctx context.Context, tickTime time.Duration) <-chan *DisplayTime {
-	c.runLock.Lock()
-	out := make(chan *DisplayTime)
-
-	go func() {
-		defer c.runLock.Unlock()
-		defer close(out)
-		for {
-			out <- c.DisplayTime(tickTime)
-			select {
-			case <-time.After(tickTime):
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-	return out
+func Clock(runes string) clock {
+	return clock{
+		timeFormat: TimeFormatHuman,
+		clockRunes: strings.Split(runes, ":"),
+	}
 }
 
 // Chars returns the clock chars.
-func (c *Clock) Chars(tickInterval time.Duration) string {
-	step := (time.Now().UnixNano() / int64(tickInterval)) % int64(len(brailleClock))
-	return brailleClock[step%int64(len(brailleClock))]
+func (c *clock) Chars(tickInterval time.Duration) string {
+	step := (time.Now().UnixNano() / int64(tickInterval)) % int64(len(c.clockRunes))
+	return c.clockRunes[step%int64(len(c.clockRunes))]
 }
 
 // DisplayTime returns the current clock text.
-func (c *Clock) DisplayTime(tickInterval time.Duration) *DisplayTime {
+func (c *clock) DisplayTime(tickInterval time.Duration) *displayTime {
 	t := time.Now()
-	return &DisplayTime{t, t.Format(c.timeFormat), c.Chars(tickInterval)}
+	return &displayTime{t, t.Format(c.timeFormat), c.Chars(tickInterval)}
 }

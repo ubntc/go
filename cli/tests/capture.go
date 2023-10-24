@@ -30,6 +30,6 @@ func Capture(file *os.File, fn func()) string {
 
 	fn()
 	w.Close()
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	return buf.String()
 }

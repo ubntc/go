@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ubntc/go/cli/cli"
+	"github.com/ubntc/go/cli/cli/config"
 	"github.com/ubntc/go/cli/loggers/stdlogger"
 )
 
@@ -39,17 +40,13 @@ func (s *Server) Shutdown() {
 func main() {
 	var (
 		interactive = flag.Bool("i", false, "interactive mode")
-		noClock     = flag.Bool("n", false, "don't display the clock")
+		showClock   = flag.Bool("c", false, "display the live clock")
+		verbose     = flag.Bool("v", false, "verbose logging")
 	)
 	flag.Parse()
 
-	var opt []cli.Option
-	if *interactive {
-		opt = append(opt, cli.WithQuit())
-	}
-	if *noClock {
-		opt = append(opt, cli.WithoutClock())
-	}
+	cfg := config.Default(*interactive)
+	cfg.ShowClock = *showClock
 
 	if *interactive {
 		cli.SetupLogging(stdlogger.Setup)
@@ -58,7 +55,9 @@ func main() {
 		log.Println("setting logger to UTC")
 	}
 
-	ctx, cancel := cli.WithSigWait(context.Background(), opt...)
+	cli.GetTerm().SetVerbose(*verbose)
+
+	ctx, cancel := cli.StartTerm(context.Background(), cfg)
 	defer cancel()
 
 	var srv Server

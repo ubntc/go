@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/ubntc/go/cli/cli"
+	"github.com/ubntc/go/cli/cli/config"
 	"github.com/ubntc/go/cli/loggers/zerologger"
 )
 
@@ -68,7 +69,7 @@ func main() {
 	var (
 		interactive = flag.Bool("i", false, "interactive mode")
 		debug       = flag.Bool("debug", false, "debug mode")
-		noClock     = flag.Bool("n", false, "don't display clock")
+		showClock   = flag.Bool("c", false, "show the live clock")
 		verbose     = flag.Bool("v", false, "vebose output and prompts")
 		demo        = flag.String("demo", "", "script sequence of input keys and delays")
 	)
@@ -77,31 +78,30 @@ func main() {
 	cli.GetTerm().SetDebug(*debug)
 	cli.GetTerm().SetVerbose(*verbose)
 
-	var opt []cli.Option
 	srv := &Server{logInterval: 900 * time.Millisecond}
 	if len(*demo) > 0 {
 		srv.logInterval = time.Minute
 	}
 
-	if *noClock {
-		opt = append(opt, cli.WithoutClock())
-	}
+	var cmds cli.Commands
+	cfg := config.Default(*interactive)
+	cfg.ShowClock = *showClock
 
 	if *interactive {
 		cli.SetupLogging(zerologger.Setup)
-		opt = append(opt, cli.WithInput(cli.Commands{
+		cmds = cli.Commands{
 			{Name: "help", Key: 'h', Fn: help},
 			{Name: "status", Key: 's', Fn: srv.LogStatus},
-		}))
+		}
 	} else {
 		// use unix time if running on non-interactive server
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	}
 
-	ctx, cancel := cli.WithSigWait(context.Background(), opt...)
+	ctx, cancel := cli.StartTerm(context.Background(), cfg, cmds...)
 	defer cancel()
 
-	go cli.GetCommands().RunScript(*demo)
+	go cli.GetCommands().RunScript(*demo) // nolint
 	go srv.Serve(ctx)
 
 	<-ctx.Done()

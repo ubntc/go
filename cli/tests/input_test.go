@@ -12,7 +12,7 @@ import (
 func TestInputChan(t *testing.T) {
 	cli.GetTerm().SetDebug(true)
 
-	f, remove := tempFile(t, "ab")
+	f, remove := TempFile(t, "ab")
 	defer remove()
 
 	ch := cli.InputChan(f)
@@ -32,10 +32,10 @@ func TestProcessInput(t *testing.T) {
 		{Name: "command", Key: 'c', Fn: func() { cancel() }},
 	}
 
-	f, remove := tempFile(t, "cx")
+	f, remove := TempFile(t, "cx")
 	defer remove()
 
-	go cli.ProcessInput(ctx, f, cmds)
+	go cli.ProcessInput(ctx, f, cmds, false)
 
 	<-ctx.Done()
 	assert.Equal(t, context.Canceled, ctx.Err())

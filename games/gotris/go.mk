@@ -15,7 +15,7 @@ $(binary): $(sources); go build -o $@ $(main)
 
 # Common Targets
 # --------------
-.PHONY: build test debug install run vars usage all
+.PHONY: build test debug install run vars sources usage all
 all:   build
 build: $(binary)
 
@@ -30,6 +30,9 @@ vars:
 	# binary:  $(binary)
 	# sources: $(sources)
 
+sources:
+	for f in $(sources); do echo "// --- $$f"; cat $$f; echo "// ---"; done
+
 usage:
 	# Usage: make TARGET [-n|-B]
 	#
@@ -40,6 +43,7 @@ usage:
 	#     run       builds and runs the binary $(binary)
 	#     install   runs go install
 	#     vars      shows the make vars
+	#     sources   print all sources known to make
 	#     usage     shows this info
 	#
 	# Flags:

@@ -2,75 +2,56 @@ package cli
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/ubntc/go/cli/cli/config"
 )
 
-type options struct {
-	withoutClock bool
-	withQuit     bool
-	commands     []Command
-}
-
-// Option defines a sigwait option.
-type Option func(*options)
-
-// WithInput makes sigwait run the given commands on receiving user input.
-// The keys q, Q, CTRL-C, and CTRL-D are reserved to quit the program.
-func WithInput(commands []Command) Option {
-	return func(o *options) {
-		o.commands = append(o.commands, commands...)
-	}
-}
-
-// WithQuit add the default quit commands and enables user input.
-func WithQuit() Option {
-	return func(o *options) {
-		o.withQuit = true
-	}
-}
-
-// WithoutClock disabled the default ascii/unicode clock in the last terminal line.
-func WithoutClock() Option {
-	return func(o *options) {
-		o.withoutClock = true
-	}
-}
-
-// SigWait waits for OS signals and cancels the given context on SIGINT or SIGTERM.
+// SigWait waits for OS signals SIGINT or SIGTERM or the termination of the given context.
 // It blocks until the context is canceled either by the awaited signal or externally.
 // It returns the received signal and the context's error.
-func SigWait(ctx context.Context, cancel context.CancelFunc) (os.Signal, error) {
-	defer cancel()
+//
+// Usage:
+//
+//		 ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+//		 defer cancel()
+//	     // start async workloads
+//	     go myServer.Start(ctx)
+//	     // await programm termination
+//		 sig, err := cli.SigWait(ctx)
+//		 fmt.Println("stopping application")
+func SigWait(ctx context.Context) (os.Signal, error) {
+	// size > 1 makes the channel non-blocking
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	var s os.Signal
 
+	// block until signal is received or context is cancelled
 	select {
 	case <-ctx.Done():
 	case s = <-sig:
 	}
 
+	// check and return context errors (excl. cancellation)
+	// this way the caller can check for abnornal program behavior
 	if err := ctx.Err(); err != context.Canceled {
 		return s, err
 	}
 	return s, nil
 }
 
-// WithSigWait returns a context.Context that is canceled on OS signal.
-//
-// WithSigWait starts a goroutine that waits for OS signals SIGINT or SIGTERM and cancels the
-// returned context after receiving the signal. Depending on the options, WithSigWait starts
-// processing input and sets up commands.
-//
-func WithSigWait(parent context.Context, opt ...Option) (context.Context, context.CancelFunc) {
-	sig := make(chan os.Signal, 1)
+// StartTerm starts terminal session management and input handling (if configured)
+// and returns a context.Context to manage the corresponding goroutines or running i/o pipes.
+// It cancels the context on receiving a SIGINT or SIGTERM from the OS.
+func StartTerm(parent context.Context, cfg config.Config, cmds ...Command) (context.Context, context.CancelFunc) {
+	sig := make(chan os.Signal, 1) // non-blocking
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	input := os.Stdin
-	var inputCommands Commands
-	var interactive bool
+	// var interactive bool
 
 	// use separate contexts to wait for closing input and for the clock
 	// use separate cancel functions to trigger stop reading input and clock stop
@@ -79,50 +60,76 @@ func WithSigWait(parent context.Context, opt ...Option) (context.Context, contex
 
 	// create a new context to be returned that is disconnected from parent
 	// to allow for sigwait to finish processing and cleanup the terminal
-	sigWaitCtx, gracefulCancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 
-	var opts options
-	for _, apply := range opt {
-		apply(&opts)
+	opts := cfg
+	var commands Commands
+
+	commands = append(commands, cmds...)
+
+	if opts.WithQuit {
+		commands = append(commands, QuitCommands(stopReadingInput)...)
 	}
 
-	if len(opts.commands) > 0 || opts.withQuit {
-		inputCommands = QuitCommands(stopReadingInput)
-		inputCommands = append(inputCommands, opts.commands...)
-		interactive = true
-	}
+	// log.Println("added", len(commands), "commands")
 
 	// wg blocks canceling the returned context until after:
 	// 1. input processing has stopped
 	// 2. the clock has stopped
 	var wg sync.WaitGroup
 
-	if interactive && !opts.withoutClock {
+	// start clock separately
+	if opts.ShowClock {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			defer stopClock()
 			PromptVerbose("clock started")
-			GetTerm().StartClock(clockCtx)
+			GetTerm().StartClock(clockCtx) // blocking
 			PromptVerbose("clock finished")
 		}()
 	}
 
-	if interactive {
+	restoreStdio := func() {}
+	if cfg.PrependCR {
+		os.Stderr = crPipeErr
+		os.Stdout = crPipeOut
+		restoreStdio = func() {
+			os.Stderr = origStderr
+			os.Stdout = origStdout
+		}
+	}
+
+	// start reading input separately
+	// manage the terminal only if there are some commands to handle
+	if len(commands) > 0 {
 		// update global commands
-		SetCommands(inputCommands)
+		SetCommands(commands)
+
+		if cfg.ShowClock && !cfg.MakeTermRaw {
+			log.Println("⚠️ setting MakeTermRaw=true ⚠️ (required by ShowClock in interative mode)")
+			cfg.MakeTermRaw = true
+		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			defer stopReadingInput()
 			PromptVerbose("user input started")
-			ProcessInput(inputCtx, input, GetCommands())
+			ProcessInput(inputCtx, input, GetCommands(), cfg.MakeTermRaw) // blocking
 			PromptVerbose("user input finished")
 		}()
 	}
 
 	go func() {
-		defer gracefulCancel() // cancel returned context after all cleanup is done
+		defer func() {
+			cancel()           // cancel the exposed context only after all cleanup is done
+			stopReadingInput() // ensure inputCtx is canceled
+			stopClock()        // ensure clockCtx is canceled
+			restoreStdio()     // ensure os.Stderr and os.Stderr are restored
+			PromptVerbose("wait for cleanup")
+			wg.Wait()
+			PromptVerbose("cleanup finished")
+		}()
 		select {
 		case s := <-sig:
 			PromptVerbose("stop on signal: %q", s)
@@ -133,12 +140,7 @@ func WithSigWait(parent context.Context, opt ...Option) (context.Context, contex
 		case <-clockCtx.Done():
 			PromptVerbose("stop on stopped clock")
 		}
-		stopReadingInput() // ensure inputCtx is canceled
-		stopClock()        // ensure clockCtx is canceled
-		PromptVerbose("wait for cleanup")
-		wg.Wait() // wait for cleanup
-		PromptVerbose("cleanup finished")
 	}()
 
-	return sigWaitCtx, gracefulCancel
+	return ctx, cancel
 }

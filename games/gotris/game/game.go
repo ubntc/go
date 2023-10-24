@@ -31,12 +31,12 @@ type Game struct {
 	rand *rand.Rand
 }
 
-func NewGame(gameRules platform.Rules, renderngPlatform platform.Platform) *Game {
+func NewGame(gameRules platform.Rules, renderingPlatform platform.Platform) *Game {
 	g := &Game{
 		Game: platform.Game{
 			Rules:    gameRules,
 			BoardPos: *geom.NewDim(8, 0),
-			Platform: renderngPlatform,
+			Platform: renderingPlatform,
 		},
 		CaptureInput: true,
 	}

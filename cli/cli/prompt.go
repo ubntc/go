@@ -9,7 +9,7 @@ func Prompt(format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
 	t := GetTerm()
 	if t.IsDebug() {
-		t.Write([]byte("\r" + msg + "\n"))
+		_, _ = t.Write([]byte("\r" + msg + "\n"))
 	}
 	t.SetMessage(msg)
 }

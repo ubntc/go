@@ -10,27 +10,38 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/crypto/ssh/terminal"
+	xterm "golang.org/x/term"
 )
 
 var terminalLock sync.RWMutex
 
-func termMakeRaw() (*terminal.State, error) {
+var (
+	origStdout   = os.Stdout
+	origStderr   = os.Stderr
+	crPipeOut, _ = CrPipe(os.Stdout)
+	crPipeErr, _ = CrPipe(os.Stderr)
+)
+
+func termMakeRaw() (*xterm.State, error) {
 	terminalLock.Lock()
 	defer terminalLock.Unlock()
-	return terminal.MakeRaw(0)
+	os.Stdout = crPipeOut
+	os.Stderr = crPipeErr
+	return xterm.MakeRaw(0)
 }
 
-func termRestore(state *terminal.State) error {
+func termRestore(state *xterm.State) error {
 	terminalLock.Lock()
 	defer terminalLock.Unlock()
-	return terminal.Restore(0, state)
+	os.Stdout = origStdout
+	os.Stderr = origStderr
+	return xterm.Restore(0, state)
 }
 
 // RestoreFunc restores the terminal.
 type RestoreFunc func() error
 
-func restoreFunc(state *terminal.State) RestoreFunc {
+func restoreFunc(state *xterm.State) RestoreFunc {
 	return func() error {
 		if err := termRestore(state); err != nil {
 			log.Println("failed to restore terminal, error:", err)
@@ -62,7 +73,7 @@ func ClaimTerminal() (RestoreFunc, error) {
 	if state != nil {
 		restore = restoreFunc(state)
 		if err != nil {
-			log.Println("old terminal State is not nil, creating RestoreFunc despite error")
+			log.Println("Warning: terminal RestoreFunc will be using a nil xterm.State")
 		}
 	}
 
@@ -76,7 +87,7 @@ func InputChan(file *os.File) <-chan rune {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				Prompt("Failed to read from %s, panic=%v", file.Name(), r)
+				Prompt("Failed to read from '%s', panic=%v", file.Name(), r)
 			}
 		}()
 		in := bufio.NewReader(file)
@@ -86,6 +97,7 @@ func InputChan(file *os.File) <-chan rune {
 			char, _, err := in.ReadRune()
 			if err != nil && err != io.EOF {
 				Prompt("Reader failed, error=%v", err)
+				return
 			}
 			if err != nil {
 				PromptVerbose("reader stopped")
@@ -99,20 +111,17 @@ func InputChan(file *os.File) <-chan rune {
 }
 
 // ProcessInput reads runes from input chan and executes the `commands` mapped to the received input keys.
-func ProcessInput(ctx context.Context, file *os.File, commands Commands) {
+func ProcessInput(ctx context.Context, file *os.File, commands Commands, termMakeRaw bool) {
 	// when reading from stdin, acquire raw terminal input and make ProcessInput wait for terminal after cleanup
-	if file == os.Stdin {
+	if file == os.Stdin && termMakeRaw {
 		restore, err := ClaimTerminal()
+		if restore != nil {
+			defer restore() // nolint
+		}
 		if err != nil {
 			PromptVerbose("failed to claim terminal, error=%s", err.Error())
 		}
-		if restore != nil {
-			defer restore()
-		}
 	}
-
-	var wg sync.WaitGroup
-	defer wg.Wait() // block ProcessInput to ensure terminal cleanup
 
 	input := InputChan(file)
 
@@ -139,11 +148,7 @@ func ProcessInput(ctx context.Context, file *os.File, commands Commands) {
 			}
 			if cmd := commands.Get(char); cmd != nil {
 				prompt = ""
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					cmd.Run()
-				}()
+				go cmd.Run(ctx)
 				continue
 			}
 			Prompt("Pressed key %q.", char)

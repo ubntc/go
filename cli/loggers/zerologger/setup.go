@@ -17,7 +17,7 @@ type stdWrap struct {
 }
 
 func (w *stdWrap) Write(b []byte) (int, error) {
-	w.Logger.Info().Msg(strings.TrimSpace(string(b)))
+	w.Logger.Info().Msg(strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(string(b)), "\n", " "), "\r", ""))
 	return len(b), nil
 }
 
