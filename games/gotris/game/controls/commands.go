@@ -73,10 +73,10 @@ func HandleOptionsCmd(command Cmd, options options.Options) HandleResult {
 	case Empty, MenuSelect:
 		return HandleResultSelectionFinished
 	case MenuDown, MenuRight:
-		options.Set((options.Get() + 1) % options.Len())
+		options.Inc()
 		return HandleResultSelectionChanged
 	case MenuUp, MenuLeft:
-		options.Set((options.Get() + options.Len() - 1) % options.Len())
+		options.Dec()
 		return HandleResultSelectionChanged
 	default:
 		return HandleResultNotHandled

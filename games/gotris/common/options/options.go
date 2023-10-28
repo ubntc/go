@@ -15,6 +15,8 @@ type Options interface {
 type Select interface {
 	Set(idx int)     // Set sets the selected option according to the given options index.
 	Get() int        // Get returns the current index of the selected option.
+	Inc()            // Increase selected options index by 1
+	Dec()            // Increase selected options index by 1
 	Len() int        // Len returns the number of options.
 	GetName() string // GetName returns the name/title of the current option.
 	List() []string  // List returns all names/titles for all possible options.
