@@ -2,137 +2,152 @@ package kstore
 
 import (
 	"context"
+	"errors"
+	"log"
 	"sync"
 	"time"
+
+	"github.com/ubntc/go/kstore/kschema"
+	"github.com/ubntc/go/kstore/provider/api"
 )
 
 type Store struct {
 	records map[string][]byte
-	table   *tableSchema
+	table   *kschema.Schema
 
-	client Client
+	client api.Client
 	mu     sync.RWMutex
 }
 
 var StoreAwaitTimeout = time.Second
 
-type Database struct {
-	db map[string]*Store
+func (s *Store) consumeLoop(ctx context.Context, reader api.Reader) (consumeErr error) {
+	defer reader.Close()
+	defer func() { consumeErr = FilterGraceful(consumeErr) }()
 
-	manager *SchemaManager
-	client  Client
-	mu      sync.RWMutex
-}
-
-func NewDatabase(manager *SchemaManager, client Client) *Database {
-	return &Database{
-		db:      make(map[string]*Store),
-		manager: manager,
-		client:  client,
-	}
-}
-
-func (s *Database) CreateOrUpdateTable(ctx context.Context, table *tableSchema) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	ts, ok := s.db[table.Name]
-	if !ok {
-		ts = &Store{
-			table:   table,
-			records: make(map[string][]byte),
-			client:  s.client,
-		}
-	}
-	if err := ts.BeginTx(TxWrite, func(ts *Store) error {
-		// ensure all messages are compatible with the new schema
-		// TODO: only on schema change
-		for _, v := range ts.records {
-			row := Row{}
-			if err := row.Decode(v); err != nil {
-				return err
+	storeAndCommit := func(m api.Message) (result error) {
+		s.mu.Lock()
+		// commit after unlocking
+		defer func() {
+			if result == nil { // commit only on successful storage
+				result = errors.Join(result, reader.Commit(ctx, m))
 			}
-			if err := table.Schema.Validate(row); err != nil {
-				return err
-			}
+		}()
+		// unlock directly after applying the change and before committing
+		// it is safe to see an uncommitted message again, once we have a version check
+		defer s.mu.Unlock()
+		// store the new message
+		// TODO: check version and reject store if it is too old
+		return s.storeMessages(ctx, m)
+	}
+
+	log.Println("starting consumeLoop for topic:", s.table.GetTopic())
+	defer log.Println("stopped consumeLoop for topic:", s.table.GetTopic())
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
 		}
-		// First send the new/changed schema to the schema topic
-		if err := s.manager.createOrUpdateTable(ctx, table); err != nil {
+
+		m, err := reader.Read(ctx)
+		if err != nil {
 			return err
 		}
-		// If this is successful then also setup/update the local store
-		return nil
-	}); err != nil {
-		return err
+
+		row := kschema.Row{Key: m.Key()}
+		if err := row.Decode(m.Value()); err != nil {
+			return
+		}
+
+		if err := storeAndCommit(m); err != nil {
+			return
+		}
 	}
-	ts.table.Schema = table.Schema
-	s.db[table.Name] = ts
+}
+
+func (s *Store) storeMessages(ctx context.Context, values ...api.Message) error {
+	log.Printf("storeMessages: %d rows\n", len(values))
+	for _, m := range values {
+		s.records[string(m.Key())] = m.Value()
+	}
 	return nil
 }
 
-func (s *Database) awaitGetStore(ctx context.Context, tbl *tableSchema) (*Store, error) {
-	ticker := time.NewTicker(StoreAwaitTimeout)
-	defer ticker.Stop()
-	for {
-		store, err := s.GetStore(tbl)
-		switch {
-		case err == nil:
-			return store, nil
-		case err != ErrorReadStoreNotInitalized:
-			return nil, err
-		}
-		s.client.GetLogger()("awaiting TableStore:", tbl.Name)
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-ticker.C:
-			continue
-		}
-	}
-}
+func (s *Store) persistRows(ctx context.Context, rows ...kschema.Row) (result error) {
+	// ensure to write data locally after successfully sending it out
+	log.Printf("persistRows: %d rows\n", len(rows))
+	topic := s.table.GetTopic()
 
-func (s *Database) StartTableReader(ctx context.Context, tbl *tableSchema) (<-chan error, error) {
-	r := s.client.NewReader(tbl.GetTopic())
-	errch := make(chan error, 1)
+	var err error
+	var rowBytes []byte
+	var messages []api.Message
 
-	go func() {
-		defer close(errch)
-		store, err := s.awaitGetStore(ctx, tbl)
-		if err != nil {
-			errch <- err
-			return
-		}
-		errch <- store.consumeLoop(ctx, r)
+	// store committed messages and augment the returned error
+	defer func() {
+		result = errors.Join(
+			result,
+			s.storeMessages(ctx, messages...),
+		)
 	}()
 
-	return errch, nil
+	for _, r := range rows {
+		if err = s.table.Schema.Validate(r); err != nil {
+			return err
+		}
+		if rowBytes, err = r.Encode(); err != nil {
+			return err
+		}
+		msg := kschema.NewMessage(topic, r.Key, rowBytes)
+		err = s.client.Write(ctx, topic, msg)
+		if err != nil {
+			return err
+		}
+		messages = append(messages, msg)
+	}
+
+	return nil
 }
 
-func (s *Database) GetStore(table *tableSchema) (*Store, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.getStore(table)
+// ---------------------------
+// Transaction Processing,
+// Locked Reads, Locked Writes
+// ---------------------------
+
+type (
+	TxFunc func(ks *Store) error
+	TxType string
+)
+
+const (
+	TxRead  = "read"
+	TxWrite = "write"
+)
+
+func (ts *Store) BeginTx(typ TxType, fn TxFunc) error {
+	if typ == TxWrite {
+		ts.mu.Lock()
+		defer ts.mu.Unlock()
+	} else {
+		ts.mu.RLock()
+		defer ts.mu.RUnlock()
+	}
+	log.Println("BeginTx:", typ)
+	return fn(ts)
 }
 
-func (s *Database) getStore(table *tableSchema) (*Store, error) {
-	ts, ok := s.db[table.Name]
+func (ts *Store) WriteRow(ctx context.Context, value kschema.Row) error {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	return ts.persistRows(ctx, value)
+}
+
+func (ts *Store) GetRow(ctx context.Context, key string) (*kschema.Row, error) {
+	ts.mu.RLock()
+	defer ts.mu.RUnlock()
+	data, ok := ts.records[key]
 	if !ok {
-		return nil, ErrorStoreNotInitalized
+		return nil, nil
 	}
-	return ts, nil
-}
-
-func (s *Database) WriteRows(ctx context.Context, tbl *tableSchema, rows ...Row) error {
-	// do not allow wrting any metadata writes on the stores
-	// do allow reading metadata
-	// do allow individual store access
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	ts, err := s.getStore(tbl)
-	if err != nil {
-		return err
-	}
-	// starts a write Tx on the individual store
-	return ts.BeginTx(TxWrite, func(ts *Store) error {
-		return ts.persistRows(ctx, rows...)
-	})
+	return (&kschema.Row{}).Decoded(data)
 }

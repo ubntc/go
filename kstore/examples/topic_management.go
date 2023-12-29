@@ -5,21 +5,22 @@ import (
 	"errors"
 	"log"
 
+	"github.com/ubntc/go/kstore/kschema"
 	"github.com/ubntc/go/kstore/kstore"
 	"github.com/ubntc/go/kstore/kstore/config"
-	"github.com/ubntc/go/kstore/provider/kafkago"
+	"github.com/ubntc/go/kstore/kstore/manager"
 )
 
-func RunTopicManagement(ctx context.Context, tm *kstore.SchemaManager, cfg *config.KeyFile) (result error) {
+func RunTopicManagement(ctx context.Context, acton *manager.Workflow) (result error) {
 	log.Println("start demo: RunTopicManagement")
 
-	tbl, err := kstore.NewTableSchema("table1", kstore.Field{Name: "col1", Type: kstore.FieldTypeString})
+	tbl, err := kschema.NewTableSchema("table1", kschema.Field{Name: "col1", Type: kschema.FieldTypeString})
 	if err != nil {
 		return err
 	}
 
-	group := "demo1"
-	c := kafkago.NewClient(cfg, config.DefaultProperties(), config.Group{ID: group})
+	c := acton.Client()
+	tm := acton.SchemaManager()
 	db := kstore.NewDatabase(tm, c)
 
 	errch, err := db.StartTableReader(ctx, tbl)
@@ -49,12 +50,12 @@ func RunTopicManagement(ctx context.Context, tm *kstore.SchemaManager, cfg *conf
 	l.Add("create", func() error { return db.CreateOrUpdateTable(ctx, tbl) })
 	l.Add("write rows 1", addRows)
 	l.Add("update 1", func() error {
-		tbl.Schema = append(tbl.Schema, kstore.Field{Name: "col2", Type: kstore.FieldTypeString})
+		tbl.Schema = append(tbl.Schema, kschema.Field{Name: "col2", Type: kschema.FieldTypeString})
 		return db.CreateOrUpdateTable(ctx, tbl)
 	})
 	l.Add("write rows 1", addRows)
 	l.Add("update 2", func() error {
-		tbl.Schema = append(tbl.Schema, kstore.Field{Name: "col3", Type: kstore.FieldTypeString})
+		tbl.Schema = append(tbl.Schema, kschema.Field{Name: "col3", Type: kschema.FieldTypeString})
 		return db.CreateOrUpdateTable(ctx, tbl)
 	})
 	l.Add("write rows 2", addRows)

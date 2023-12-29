@@ -1,4 +1,4 @@
-package kstore
+package kschema
 
 import (
 	"encoding/json"

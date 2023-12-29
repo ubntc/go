@@ -3,12 +3,17 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"time"
 )
 
-var ErrorKeyFileError = errors.New("Failed to load or parse keyfile")
+var (
+	ErrorParseKeyFile = errors.New("Failed to load or parse keyfile")
+	ErrorFindKeyFile  = errors.New("Failed to find keyfile")
+)
 
 const (
 	DefaultNumPartitions      = 10
@@ -48,12 +53,22 @@ type KeyFile struct {
 	Server string `json:"server,omitempty"`
 }
 
-func (kf *KeyFile) Load(filename string) error {
+func (kf *KeyFile) Load() error {
+	if kf == nil {
+		*kf = KeyFile{}
+	}
+	filename, err := FindKeyFile()
+	if err != nil {
+		return errors.Join(err, ErrorFindKeyFile)
+	}
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return errors.Join(err, ErrorKeyFileError)
+		return errors.Join(err, ErrorParseKeyFile)
 	}
-	return json.Unmarshal(data, kf)
+	if err := json.Unmarshal(data, kf); err != nil {
+		return errors.Join(err, fmt.Errorf("file is not a SASL config (see this example: %s)", ExampleConfig))
+	}
+	return nil
 }
 
 func (kf *KeyFile) Validate() error {
@@ -69,10 +84,45 @@ func (kf *KeyFile) Validate() error {
 	return nil
 }
 
-func LoadConfig() (*KeyFile, error) {
+const (
+	KeyFileEnvName = "KAFKA_SASL_CREDENTIALS"
+	KeyFileName    = "kafka_sasl_credentials.json"
+	SecretsDir     = ".secrets"
+	ConfigDir      = ".config"
+	ConfigSubDir   = "kafka"
+	ExampleConfig  = `{
+	"key":    "my-api-user",
+	"secret": "my-api-secret",
+	"server": "my-cluster.europe-west3.gcp.confluent.cloud:9092"
+}`
+)
+
+func FindKeyFile() (string, error) {
+	home := os.Getenv("HOME")
+	locations := []string{
+		os.Getenv(KeyFileEnvName),                             // 1. use anything on the env
+		path.Join(ConfigDir, ConfigSubDir, KeyFileName),       // 2. use a local config
+		path.Join(SecretsDir, KeyFileName),                    // 3. use a local secret
+		path.Join(home, ConfigDir, ConfigSubDir, KeyFileName), // 4. use the HOME config
+		path.Join(home, SecretsDir, KeyFileName),              // 5. use the HOME secret
+	}
+	var result error
+	for _, loc := range locations {
+		if f, err := os.Open(loc); result != nil {
+			_ = f.Close()
+			return f.Name(), nil
+		} else {
+			result = errors.Join(result, err)
+		}
+	}
+	result = errors.Join(result, errors.New("SASL config not found in the known locations"))
+	return "", result
+}
+
+func LoadKeyFile() (*KeyFile, error) {
 	cfg := KeyFile{}
 
-	if err := cfg.Load(os.Getenv("CC_API_KEY_FILE")); err != nil {
+	if err := cfg.Load(); err != nil {
 		return nil, err
 	}
 

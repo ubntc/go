@@ -6,9 +6,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ubntc/go/kstore/kschema"
 )
 
-func GenerateRows(table *tableSchema, num int) (rows []Row) {
+func GenerateRows(table *kschema.Schema, num int) (rows []kschema.Row) {
 	for i := 0; i < num; i++ {
 		row := GenerateRow(table)
 		rows = append(rows, row)
@@ -19,8 +21,8 @@ func GenerateRows(table *tableSchema, num int) (rows []Row) {
 	return
 }
 
-func GenerateRow(table *tableSchema) Row {
-	row := Row{
+func GenerateRow(table *kschema.Schema) kschema.Row {
+	row := kschema.Row{
 		Key:    nil,
 		Values: nil,
 	}
@@ -34,7 +36,7 @@ func GenerateRow(table *tableSchema) Row {
 		prefix := strings.ToLower(field.Name) + ":"
 		var value any
 		switch field.Type {
-		case FieldTypeString:
+		case kschema.FieldTypeString:
 			value = prefix + rndStr
 			if i == 0 {
 				v, ok := value.(string)

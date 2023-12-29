@@ -6,17 +6,17 @@ import (
 	"strconv"
 
 	"github.com/segmentio/kafka-go"
-	"github.com/ubntc/go/kstore/kstore"
+	"github.com/ubntc/go/kstore/provider/api"
 )
 
-func NewLogger(name string) kstore.LoggerFunc {
+func NewLogger(name string) api.LoggerFunc {
 	return func(format string, args ...any) {
 		log.Printf(name+": "+format, args...)
 		log.Println()
 	}
 }
 
-func NilLogger() kstore.LoggerFunc {
+func NilLogger() api.LoggerFunc {
 	return func(format string, args ...any) {}
 }
 

@@ -1,12 +1,12 @@
-package kstore
+package kschema
 
 import (
 	"github.com/ubntc/go/kstore/kstore/config"
 	"github.com/ubntc/go/kstore/kstore/status"
 )
 
-// tableSchema idenfies and fully defines a kstore table.
-type tableSchema struct {
+// Schema idenfies and fully defines a kstore table.
+type Schema struct {
 	Name   string      `json:"name,omitempty"`
 	Topic  string      `json:"topic,omitempty"`
 	Schema FieldSchema `json:"schema,omitempty"`
@@ -14,8 +14,8 @@ type tableSchema struct {
 	state status.TableState
 }
 
-func NewTableSchema(name string, fields ...Field) (*tableSchema, error) {
-	s := &tableSchema{
+func NewTableSchema(name string, fields ...Field) (*Schema, error) {
+	s := &Schema{
 		Name:   name,
 		Schema: fields,
 		state:  status.TableState{},
@@ -26,21 +26,21 @@ func NewTableSchema(name string, fields ...Field) (*tableSchema, error) {
 	return s, nil
 }
 
-func (t *tableSchema) Validate() error {
+func (t *Schema) Validate() error {
 	if t.Name == "" {
 		return ErrorEmptyTableName
 	}
 	return nil
 }
 
-func (t *tableSchema) GetTopic() string {
+func (t *Schema) GetTopic() string {
 	if t.Topic == "" {
 		return config.DefaultTopicPrefix + t.Name
 	}
 	return t.Topic
 }
 
-func (t *tableSchema) GetTable() string {
+func (t *Schema) GetTable() string {
 	return t.Name
 }
 

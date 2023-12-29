@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/segmentio/kafka-go"
-	"github.com/ubntc/go/kstore/kstore"
+	"github.com/ubntc/go/kstore/provider/api"
 )
 
 type Reader struct {
@@ -16,7 +16,7 @@ func (r *Reader) Close() error {
 	return r.reader.Close()
 }
 
-func (r *Reader) Commit(ctx context.Context, msg kstore.Message) error {
+func (r *Reader) Commit(ctx context.Context, msg api.Message) error {
 	return r.reader.CommitMessages(ctx, kafka.Message{
 		Topic: r.topic,
 		Key:   msg.Key(),
@@ -24,7 +24,7 @@ func (r *Reader) Commit(ctx context.Context, msg kstore.Message) error {
 	})
 }
 
-func (r *Reader) Read(ctx context.Context) (kstore.Message, error) {
+func (r *Reader) Read(ctx context.Context) (api.Message, error) {
 	m, err := r.reader.FetchMessage(ctx)
 	if err != nil {
 		return nil, err
@@ -33,4 +33,4 @@ func (r *Reader) Read(ctx context.Context) (kstore.Message, error) {
 }
 
 // ensure we implement the full interface
-func init() { _ = kstore.Reader(&Reader{}) }
+func init() { _ = api.Reader(&Reader{}) }

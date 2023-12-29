@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/segmentio/kafka-go"
-	"github.com/ubntc/go/kstore/kstore"
 	"github.com/ubntc/go/kstore/kstore/config"
+	"github.com/ubntc/go/kstore/provider/api"
 )
 
 type Client struct {
 	client        *kafka.Client
 	defaultWriter *Writer
 
-	logger     kstore.LoggerFunc
+	logger     api.LoggerFunc
 	properties map[string]string
 	keyFile    *config.KeyFile
 	group      config.Group
@@ -37,7 +37,7 @@ func NewClient(cfg *config.KeyFile, props config.KafkaProperties, group config.G
 	return c
 }
 
-func (c *Client) NewWriter() kstore.Writer {
+func (c *Client) NewWriter() api.Writer {
 	return &Writer{writer: c.newWriter()}
 }
 
@@ -45,7 +45,7 @@ func (c *Client) newWriter() *kafka.Writer {
 	cfg := c.keyFile
 	w := &kafka.Writer{
 		Addr:         kafka.TCP(cfg.Server),
-		Topic:        "", // leave topic empty, must be set as Message.Topic
+		Topic:        "", // leave topic empty, must be set as kschema.Topic
 		Transport:    defaultTransport(cfg.Key, cfg.Secret),
 		BatchSize:    1,
 		Logger:       kafka.LoggerFunc(c.logger),
@@ -58,7 +58,7 @@ func (c *Client) newWriter() *kafka.Writer {
 	return w
 }
 
-func (c *Client) NewReader(topic string) kstore.Reader {
+func (c *Client) NewReader(topic string) api.Reader {
 	topics := []string{topic}
 	for _, v := range c.group.Topics {
 		if v != topic {
@@ -79,7 +79,7 @@ func (c *Client) NewReader(topic string) kstore.Reader {
 	return r
 }
 
-func (c *Client) CreateTopics(ctx context.Context, topics ...string) (kstore.TopicErrors, error) {
+func (c *Client) CreateTopics(ctx context.Context, topics ...string) (api.TopicErrors, error) {
 	req := &kafka.CreateTopicsRequest{
 		Addr:   c.client.Addr,
 		Topics: DefaultTopicConfigs(c.properties, topics...),
@@ -92,7 +92,7 @@ func (c *Client) CreateTopics(ctx context.Context, topics ...string) (kstore.Top
 	return nil, nil
 }
 
-func (c *Client) DeleteTopics(ctx context.Context, topics ...string) (kstore.TopicErrors, error) {
+func (c *Client) DeleteTopics(ctx context.Context, topics ...string) (api.TopicErrors, error) {
 	req := &kafka.DeleteTopicsRequest{
 		Addr:   c.client.Addr,
 		Topics: topics,
@@ -106,15 +106,15 @@ func (c *Client) DeleteTopics(ctx context.Context, topics ...string) (kstore.Top
 }
 
 // Write writes a message using the default writer.
-func (c *Client) Write(ctx context.Context, topic string, msg ...kstore.Message) error {
+func (c *Client) Write(ctx context.Context, topic string, msg ...api.Message) error {
 	return c.defaultWriter.Write(ctx, topic, msg...)
 }
 
-func (c *Client) SetLogger(fn kstore.LoggerFunc) {
+func (c *Client) SetLogger(fn api.LoggerFunc) {
 	c.logger = fn
 }
 
-func (c *Client) GetLogger() kstore.LoggerFunc {
+func (c *Client) GetLogger() api.LoggerFunc {
 	return c.logger
 }
 
@@ -130,4 +130,4 @@ func (c *Client) Close() error {
 }
 
 // ensure we implement the full interface
-func init() { _ = kstore.Client(&Client{}) }
+var _ = api.Client(&Client{})

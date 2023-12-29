@@ -5,14 +5,14 @@ import (
 	"log"
 
 	"github.com/segmentio/kafka-go"
-	"github.com/ubntc/go/kstore/kstore"
+	"github.com/ubntc/go/kstore/provider/api"
 )
 
 type Writer struct {
 	writer *kafka.Writer
 }
 
-func (w *Writer) Write(ctx context.Context, topic string, messages ...kstore.Message) error {
+func (w *Writer) Write(ctx context.Context, topic string, messages ...api.Message) error {
 	km := make([]kafka.Message, 0)
 	for _, m := range messages {
 		// if i == 0 {
@@ -36,4 +36,4 @@ func (w *Writer) Close() error {
 }
 
 // ensure we implement the full interface
-func init() { _ = kstore.Writer(&Writer{}) }
+func init() { _ = api.Writer(&Writer{}) }

@@ -1,4 +1,4 @@
-package kstore
+package manager
 
 import (
 	"context"
@@ -6,15 +6,17 @@ import (
 	"errors"
 	"log"
 
+	"github.com/ubntc/go/kstore/kschema"
 	"github.com/ubntc/go/kstore/kstore/status"
+	"github.com/ubntc/go/kstore/provider/api"
 )
 
 type SchemaManager struct {
 	schemasTopic string
-	client       Client
+	client       api.Client
 }
 
-func NewSchemaManager(schemasTopic string, client Client) *SchemaManager {
+func NewSchemaManager(schemasTopic string, client api.Client) *SchemaManager {
 	tm := &SchemaManager{
 		schemasTopic: schemasTopic,
 		client:       client,
@@ -37,17 +39,14 @@ func (tm *SchemaManager) setup(ctx context.Context) error {
 	return nil
 }
 
-func (tm *SchemaManager) createOrUpdateTable(ctx context.Context, schema *tableSchema) error {
+func (tm *SchemaManager) createOrUpdateTable(ctx context.Context, schema *kschema.Schema) error {
 	table := schema.Name
 	val, err := json.Marshal(schema)
 	if err != nil {
 		return err
 	}
 
-	msg := &message{
-		value: val,
-		key:   []byte(table),
-	}
+	msg := kschema.NewMessage(tm.schemasTopic, []byte(table), val)
 
 	topic := schema.GetTopic()
 
@@ -70,11 +69,9 @@ func (tm *SchemaManager) createOrUpdateTable(ctx context.Context, schema *tableS
 	return nil
 }
 
-func (tm *SchemaManager) deleteTable(ctx context.Context, schema *tableSchema) error {
-	msg := &message{
-		key:   []byte(schema.Name),
-		value: nil,
-	}
+func (tm *SchemaManager) deleteTable(ctx context.Context, schema *kschema.Schema) error {
+	msg := kschema.NewMessage(tm.schemasTopic, []byte(schema.Name), nil)
+
 	err := tm.client.Write(ctx, tm.schemasTopic, msg)
 	if err != nil {
 		return err
@@ -135,4 +132,8 @@ func (tm *SchemaManager) deleteTopics(ctx context.Context, topics ...string) err
 	}
 
 	return nil
+}
+
+func (tm *SchemaManager) Client() api.Client {
+	return tm.client
 }

@@ -11,20 +11,15 @@ var (
 	// Manager Validation
 
 	ErrorNotInitialized      = errors.New("SchemaManager not initialized")
-	ErrorEmptyTopic          = errors.New("SchemaManager.Topic not set")
 	ErrorWriterTopicNotEmpty = errors.New("Writer.Topic must not be set")
-	ErrorWriterNotDefined    = errors.New("Writer not defined")
 
 	// Data Validation
 
-	ErrorNoTableSchema        = errors.New("No schema found for table")
-	ErrorEmptyTableName       = errors.New("Table.Name must not be empty")
-	ErrorTooManyValues        = errors.New("row has more values than schema fields")
-	ErrorInvalidFieldType     = errors.New("row value has invalid field type")
-	ErrorUnsupportedFieldType = errors.New("unsupported field type")
-	ErrorTopicMismatch        = errors.New("Message topic and Table topic do not match")
-	ErrorNilRow               = errors.New("Row was nil while setting key or value")
-	ErrorNilMessage           = errors.New("Message was nil while setting key or value")
+	ErrorNoTableSchema = errors.New("No schema found for table")
+
+	ErrorTopicMismatch = errors.New("Message topic and Table topic do not match")
+	ErrorNilRow        = errors.New("Row was nil while setting key or value")
+	ErrorNilMessage    = errors.New("Message was nil while setting key or value")
 
 	// Store Validation
 

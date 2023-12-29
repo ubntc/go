@@ -1,9 +1,9 @@
-package kstore
+package kschema
 
 import (
 	"errors"
 
-	"github.com/segmentio/kafka-go"
+	"github.com/ubntc/go/kstore/provider/api"
 )
 
 type FieldType string
@@ -19,7 +19,7 @@ const (
 type Field struct {
 	Name string    `json:"name,omitempty"`
 	Type FieldType `json:"type,omitempty"`
-	// Repeated   bool      `json:"repeated,omitempty"`
+	// Repeated   bool   `json:"repeated,omitempty"`
 	// RecordType Schema `json:"record_type,omitempty"`
 }
 
@@ -62,12 +62,12 @@ func (s FieldSchema) ValidateRows(rows ...Row) error {
 	return nil
 }
 
-func (s FieldSchema) ValidateMessage(msg *kafka.Message) error {
+func (s FieldSchema) ValidateMessage(msg api.Message) error {
 	if msg == nil {
 		return nil
 	}
 	row := Row{}
-	if err := row.Decode(msg.Value); err != nil {
+	if err := row.Decode(msg.Value()); err != nil {
 		return err
 	}
 	return s.ValidateRows(row)

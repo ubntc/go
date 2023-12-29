@@ -1,8 +1,10 @@
-package kstore
+package manager
 
 import (
 	"context"
 	"errors"
+
+	"github.com/ubntc/go/kstore/kschema"
 )
 
 // Commands
@@ -22,7 +24,7 @@ func (tm *SchemaManager) Validate() error {
 }
 
 // PurgeTable clears the Schema for the given table and deletes the table topic.
-func (tm *SchemaManager) PurgeTable(ctx context.Context, schema *tableSchema) error {
+func (tm *SchemaManager) PurgeTable(ctx context.Context, schema *kschema.Schema) error {
 	if err := tm.validate(); err != nil {
 		return err
 	}
@@ -33,7 +35,7 @@ func (tm *SchemaManager) PurgeTable(ctx context.Context, schema *tableSchema) er
 }
 
 // ResetTable clears teh Schema for the given topic.
-func (tm *SchemaManager) ResetTable(ctx context.Context, schema *tableSchema) error {
+func (tm *SchemaManager) ResetTable(ctx context.Context, schema *kschema.Schema) error {
 	if err := tm.validate(); err != nil {
 		return err
 	}
@@ -42,7 +44,7 @@ func (tm *SchemaManager) ResetTable(ctx context.Context, schema *tableSchema) er
 }
 
 // DeleteTable resets the table schema and deletes the table topic.
-func (tm *SchemaManager) DeleteTable(ctx context.Context, schema *tableSchema) error {
+func (tm *SchemaManager) DeleteTable(ctx context.Context, schema *kschema.Schema) error {
 	if err := tm.validate(); err != nil {
 		return err
 	}
@@ -58,7 +60,7 @@ func (tm *SchemaManager) DeleteTopic(ctx context.Context, name string) error {
 }
 
 // CreateOrUpdateTable creates a table topic (if needed) and updates the table schema.
-func (tm *SchemaManager) CreateOrUpdateTable(ctx context.Context, schema *tableSchema) error {
+func (tm *SchemaManager) CreateOrUpdateTable(ctx context.Context, schema *kschema.Schema) error {
 	if err := tm.validate(); err != nil {
 		return err
 	}
@@ -66,6 +68,6 @@ func (tm *SchemaManager) CreateOrUpdateTable(ctx context.Context, schema *tableS
 }
 
 // GetSchema returns the stored schema for the given TableTopic.
-func (tm *SchemaManager) GetSchema(ctx context.Context, table TableTopic) (FieldSchema, error) {
+func (tm *SchemaManager) GetSchema(ctx context.Context, table kschema.TableTopic) (kschema.FieldSchema, error) {
 	return nil, errors.New("GetSchema not implemented")
 }
