@@ -21,3 +21,6 @@
 # Why can't they store that in a central place? 🤷
 .DS_Store
 bin
+
+# local data dirs
+.pebble

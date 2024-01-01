@@ -108,7 +108,10 @@ func FindKeyFile() (string, error) {
 	}
 	var result error
 	for _, loc := range locations {
-		if f, err := os.Open(loc); result != nil {
+		if loc == "" {
+			continue
+		}
+		if f, err := os.Open(loc); err == nil {
 			_ = f.Close()
 			return f.Name(), nil
 		} else {

@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log"
+
+	"github.com/ubntc/go/kstore/provider/api"
 )
 
 var (
@@ -51,4 +54,15 @@ func FilterGraceful(err error) error {
 	default:
 		return err
 	}
+}
+
+func NewLogger(name string) api.LoggerFunc {
+	return func(format string, args ...any) {
+		log.Printf(name+": "+format, args...)
+		log.Println()
+	}
+}
+
+func NilLogger() api.LoggerFunc {
+	return func(format string, args ...any) {}
 }

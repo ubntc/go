@@ -11,16 +11,16 @@ import (
 	"github.com/ubntc/go/kstore/provider/api"
 )
 
-var globalOffset atomic.Int64
+var globalOffset atomic.Uint64
 
-func init() { globalOffset.Add(time.Now().UnixNano()) }
+func init() { globalOffset.Add(uint64(time.Now().UnixNano())) }
 
 // fields defines a marshallable message
 type fields struct {
 	Topic  string `json:"topic,omitempty"`
 	Key    []byte `json:"key,omitempty"`
 	Value  []byte `json:"value,omitempty"`
-	Offset int64  `json:"offset,omitempty"`
+	Offset uint64 `json:"offset,omitempty"`
 }
 
 // Message is the defaulr message type used to create new concrete payloads
@@ -56,14 +56,14 @@ func CopyMessage(msg api.Message) Message {
 	return Message{fields{Topic: msg.Topic(), Offset: msg.Offset(), Key: msg.Key(), Value: msg.Value()}}
 }
 
-func RawMessage(topic string, offset int64, key, value []byte) Message {
+func RawMessage(topic string, offset uint64, key, value []byte) Message {
 	return Message{fields{Topic: topic, Offset: offset, Key: key, Value: value}}
 }
 
-func (m *Message) Key() []byte   { return m.fields.Key }
-func (m *Message) Value() []byte { return m.fields.Value }
-func (m *Message) Offset() int64 { return m.fields.Offset }
-func (m *Message) Topic() string { return m.fields.Topic }
+func (m *Message) Key() []byte    { return m.fields.Key }
+func (m *Message) Value() []byte  { return m.fields.Value }
+func (m *Message) Offset() uint64 { return m.fields.Offset }
+func (m *Message) Topic() string  { return m.fields.Topic }
 func (m *Message) String() string {
 	if m == nil {
 		return "api.Message(nil)"

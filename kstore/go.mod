@@ -2,7 +2,11 @@ module github.com/ubntc/go/kstore
 
 go 1.21
 
-require github.com/segmentio/kafka-go v0.4.44
+require (
+	github.com/prometheus/client_golang v1.12.0
+	github.com/prometheus/client_model v0.2.1-0.20210607210712-147c58e9608a
+	github.com/segmentio/kafka-go v0.4.44
+)
 
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect
@@ -19,13 +23,12 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.12.0 // indirect
-	github.com/prometheus/client_model v0.2.1-0.20210607210712-147c58e9608a // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
@@ -34,5 +37,5 @@ require (
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
+	github.com/stretchr/testify v1.8.4
 )

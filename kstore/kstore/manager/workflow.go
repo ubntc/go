@@ -36,8 +36,9 @@ type Workflow struct {
 
 func NewWorkflow(tm *SchemaManager, keyFile *config.KeyFile, actions []Action, program []string) (*Workflow, error) {
 	wf := &Workflow{
-		tm: tm,
-		kf: keyFile,
+		tm:    tm,
+		kf:    keyFile,
+		funcs: make(map[string]ActionFunc),
 	}
 	for _, cmd := range actions {
 		if err := wf.SetFunc(cmd.Name, cmd.Func); err != nil {
@@ -54,6 +55,7 @@ func (a *Workflow) SchemaManager() *SchemaManager { return a.tm }
 func (a *Workflow) ServerAddress() string         { return a.kf.Server }
 func (a *Workflow) KeyFile() *config.KeyFile      { return a.kf }
 func (a *Workflow) Client() api.Client            { return a.tm.Client() }
+func (a *Workflow) Close() error                  { return a.tm.Client().Close() }
 func (a *Workflow) AddStep(cmd ...Action)         { a.steps = append(a.steps, cmd...) }
 func (a *Workflow) DeferStep(cmd ...Action)       { a.deferedSteps = append(a.deferedSteps, cmd...) }
 

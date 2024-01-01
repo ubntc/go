@@ -6,10 +6,10 @@ import (
 	"log"
 	"strings"
 
+	"github.com/ubntc/go/kstore/kstore"
 	"github.com/ubntc/go/kstore/kstore/config"
 	"github.com/ubntc/go/kstore/kstore/manager"
 	"github.com/ubntc/go/kstore/provider/api"
-	"github.com/ubntc/go/kstore/provider/kafkago"
 )
 
 var shortInfo = "KStore manages evolvable data tables as compacted topics in Kafka."
@@ -101,13 +101,12 @@ func Parse(getClient ClientGetter, customActions ...manager.Action) (*manager.Wo
 		Topics: []string{config.DefaultSchemasTopic},
 	}
 
-	// client := kafkago.NewClient(cfg, config.DefaultProperties(), groupConfig)
 	client := getClient(cfg, groupConfig)
-	defer client.Close()
 	tm := manager.NewSchemaManager(config.DefaultSchemasTopic, client)
 
 	if *verbose {
-		client.SetLogger(kafkago.NewLogger("SchemaManager"))
+		// TODO: extract logger interface
+		client.SetLogger(kstore.NewLogger("SchemaManager"))
 	}
 
 	program := flag.Args()

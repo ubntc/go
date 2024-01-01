@@ -11,7 +11,7 @@ import (
 	"github.com/ubntc/go/kstore/kstore/manager"
 )
 
-func RunTopicManagement(ctx context.Context, acton *manager.Workflow) (result error) {
+func RunTopicManagement(ctx context.Context, wf *manager.Workflow) (result error) {
 	log.Println("start demo: RunTopicManagement")
 
 	tbl, err := kschema.NewTableSchema("table1", kschema.Field{Name: "col1", Type: kschema.FieldTypeString})
@@ -19,8 +19,8 @@ func RunTopicManagement(ctx context.Context, acton *manager.Workflow) (result er
 		return err
 	}
 
-	c := acton.Client()
-	tm := acton.SchemaManager()
+	c := wf.Client()
+	tm := wf.SchemaManager()
 	db := kstore.NewDatabase(tm, c)
 
 	errch, err := db.StartTableReader(ctx, tbl)
@@ -57,6 +57,15 @@ func RunTopicManagement(ctx context.Context, acton *manager.Workflow) (result er
 	l.Add("update 2", func() error {
 		tbl.Schema = append(tbl.Schema, kschema.Field{Name: "col3", Type: kschema.FieldTypeString})
 		return db.CreateOrUpdateTable(ctx, tbl)
+	})
+	l.Add("read one message", func() error {
+		r := tm.Client().NewReader(tbl.GetTopic())
+		defer r.Close()
+		_, err := r.Read(ctx)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 	l.Add("write rows 2", addRows)
 	l.Add("delete all", func() error {

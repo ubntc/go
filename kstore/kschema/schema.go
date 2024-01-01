@@ -17,6 +17,7 @@ type Schema struct {
 func NewTableSchema(name string, fields ...Field) (*Schema, error) {
 	s := &Schema{
 		Name:   name,
+		Topic:  config.DefaultTopicPrefix + name,
 		Schema: fields,
 		state:  status.TableState{},
 	}
@@ -30,19 +31,14 @@ func (t *Schema) Validate() error {
 	if t.Name == "" {
 		return ErrorEmptyTableName
 	}
+	if t.Topic == "" {
+		return ErrorEmptyTopicName
+	}
 	return nil
 }
 
-func (t *Schema) GetTopic() string {
-	if t.Topic == "" {
-		return config.DefaultTopicPrefix + t.Name
-	}
-	return t.Topic
-}
-
-func (t *Schema) GetTable() string {
-	return t.Name
-}
+func (t *Schema) GetTopic() string { return t.Topic }
+func (t *Schema) GetTable() string { return t.Name }
 
 type TableTopic interface {
 	Topic() string
