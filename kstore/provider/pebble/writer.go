@@ -3,8 +3,6 @@ package pebble
 import (
 	"context"
 
-	"github.com/cockroachdb/pebble"
-	"github.com/ubntc/go/kstore/kschema"
 	"github.com/ubntc/go/kstore/provider/api"
 )
 
@@ -17,17 +15,11 @@ func NewWriter(c *Client) *Writer {
 }
 
 func (w *Writer) Write(ctx context.Context, topic string, messages ...api.Message) error {
-	db, err := w.client.GetDB(topic)
+	err := w.client.Write(ctx, topic, messages...)
 	if err != nil {
 		return err
 	}
-
-	for _, m := range messages {
-		msg := Message{kschema.CopyMessage(m)}
-		if err := db.Set(StorageKey(&msg), msg.StorageValue(), pebble.Sync); err != nil {
-			return err
-		}
-	}
+	Metrics.ObserveWrite(topic)
 	return nil
 }
 

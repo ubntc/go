@@ -1,7 +1,7 @@
 package pebble
 
 import (
-	"encoding/binary"
+	"math/big"
 
 	"github.com/ubntc/go/kstore/kschema"
 	"github.com/ubntc/go/kstore/provider/api"
@@ -10,26 +10,30 @@ import (
 type Message struct{ kschema.Message }
 
 // Offset extracts and returns the offset from a given storage key.
-func Offset(storageKey []byte) int64 {
+func Offset(storageKey []byte) uint64 {
 	if len(storageKey) < 8 {
 		panic("storageKey is too short")
 	}
 
-	return int64(binary.BigEndian.Uint64(storageKey[:8]))
+	return big.NewInt(0).SetBytes(storageKey[:8]).Uint64()
+}
+
+// OffsetBytes converts an offset to a byte slice of 8 bytes.
+func OffsetBytes(offset uint64) []byte {
+	b := make([]byte, 8)
+	offsetBytes := big.NewInt(0).SetUint64(offset).Bytes()
+	copy(b[8-len(offsetBytes):], offsetBytes)
+	return b
 }
 
 // StorageKey returns a []byte key used for storing messages ordered by offset.
 func StorageKey(msg api.Message) []byte {
-	// Create a byte slice of size 8 (int64 size)
-	offsetBytes := make([]byte, 8)
-	// Encode the offset as big-endian into the byte slice
-	binary.BigEndian.PutUint64(offsetBytes, uint64(msg.Offset()))
-
 	// Concatenate offsetBytes with other identifying information
-	return append(offsetBytes, msg.Key()...)
+	return append(OffsetBytes(msg.Offset()), msg.Key()...)
 }
 
-func (m *Message) StorageValue() []byte {
+func StorageValue(msg api.Message) []byte {
+	m := Message{kschema.CopyMessage(msg)}
 	return m.MustEncode()
 }
 

@@ -1,25 +1,14 @@
 package pebble
 
 import (
-	"bytes"
 	"context"
+	"errors"
+	"fmt"
+	"log"
 	"sync"
-	"time"
 
-	"github.com/cockroachdb/pebble"
-	"github.com/ubntc/go/kstore/kschema"
 	"github.com/ubntc/go/kstore/provider/api"
 )
-
-type Reader struct {
-	topic  string
-	client *Client
-
-	key []byte // last committed key
-	// TODO: persist reader keys per group ID in pebble
-
-	mu sync.Mutex
-}
 
 type StartOffset int
 
@@ -28,82 +17,135 @@ const (
 	StartOffsetLast
 )
 
-func NewReader(client *Client, topic string, offset StartOffset) (*Reader, error) {
+type Reader struct {
+	topic       string
+	client      *Client
+	startOffset StartOffset
+
+	lastCommittedStorageKey []byte // last committed key
+	// TODO: persist reader keys per group ID in pebble
+
+	mu sync.RWMutex
+}
+
+func NewReader(client *Client, topic string, startOffset StartOffset) *Reader {
 	r := &Reader{
-		topic:  topic,
-		client: client,
+		topic:       topic,
+		client:      client,
+		startOffset: startOffset,
+	}
+	if err := r.Validate(); err != nil {
+		panic(err)
+	}
+	return r
+}
+
+func (r *Reader) Validate() error {
+	var result error
+	if r.topic == "" {
+		result = errors.Join(result, fmt.Errorf("topic not defined"))
+	}
+	if r.client == nil {
+		result = errors.Join(result, fmt.Errorf("client not defined"))
+	}
+	return result
+}
+
+// recoverLastCommit initializes the reader by setting the currentStorageKey
+// to the last committed key found in the DB.
+//
+// NOTE: Must be protected by r.mu!
+func (r *Reader) recoverLastCommit(ctx context.Context) error {
+	if r.lastCommittedStorageKey != nil {
+		return nil
 	}
 
-	db, err := r.client.GetDB(topic)
+	var key []byte
+	var err error
+	switch r.startOffset {
+	case StartOffsetLast:
+		key, err = r.client.FindLast(ctx, r.topic)
+	case StartOffsetFirst:
+		key, err = r.client.FindFirst(ctx, r.topic)
+	default:
+		return ErrorInvalidStartOffset
+	}
+
+	if err != nil {
+		return errors.Join(err, ErrorOffsetNotFound)
+	}
+
+	r.lastCommittedStorageKey = key
+	log.Println("initalized", r.describe())
+	return nil
+}
+
+func (r *Reader) key() []byte {
+	return r.lastCommittedStorageKey
+}
+
+// describe describes the current state of the reader.
+//
+// NOTE: Must be protected by r.mu!
+func (r *Reader) describe() string {
+	reader := "empty reader"
+	status := ""
+	if r.lastCommittedStorageKey != nil {
+		reader = "reader"
+		status = fmt.Sprintf("at offset=%d", Offset(r.key()))
+	}
+	return fmt.Sprintf("%s for topic=%s %s", reader, r.topic, status)
+}
+
+func (r *Reader) Read(ctx context.Context) (api.Message, error) {
+	// Make sure the reader state is not change while we read.
+	// We need a write lock here, since we need to initialize the reader on the first read.
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// in-memory buffer not defined -> read from the disk
+	return r.readFromDB(ctx)
+}
+
+func (r *Reader) readFromDB(ctx context.Context) (api.Message, error) {
+	// lazy init reader
+	if err := r.recoverLastCommit(ctx); err != nil {
+		return nil, err
+	}
+
+	msg, err := r.client.ReadNext(ctx, r.topic, r.lastCommittedStorageKey)
 	if err != nil {
 		return nil, err
 	}
 
-	iter := db.NewIter(nil)
-	switch offset {
-	case StartOffsetFirst:
-		iter.First()
-	case StartOffsetLast:
-		iter.Last()
-	default:
-		iter.First()
+	status := CompareOffsetByKey(r.key(), StorageKey(msg))
+	Metrics.ObserveRead(msg, r.topic, status)
+
+	if status < OffsetStatusCurrent {
+		return nil, ErrorReicevedOldMessage
 	}
 
-	r.key = iter.Key()
-	return r, nil
-}
-
-func (r *Reader) Close() error {
-	return nil
+	return msg, nil
 }
 
 func (r *Reader) Commit(ctx context.Context, msg api.Message) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.key = StorageKey(msg)
+	if CompareOffsetByKey(r.lastCommittedStorageKey, StorageKey(msg)) < OffsetStatusCurrent {
+		panic("message already seen, cannot commit old messages")
+	}
+
+	r.lastCommittedStorageKey = StorageKey(msg)
 	return nil
 }
 
-func (r *Reader) Read(ctx context.Context) (api.Message, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *Reader) Get(storageKey []byte) (api.Message, error) {
+	return r.client.Get(r.topic, storageKey)
+}
 
-	db, err := r.client.GetDB(r.topic)
-	if err != nil {
-		return nil, err
-	}
-
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-
-	var key, value []byte
-	next := func() bool {
-		iter := db.NewIterWithContext(ctx, &pebble.IterOptions{LowerBound: r.key})
-		defer iter.Close()
-		for iter.Next() {
-			if bytes.Equal(iter.Key(), r.key) {
-				// skip until we find a valid new key
-				continue
-			}
-			key = iter.Key()
-			value = iter.Value()
-			return true
-		}
-		return false
-	}
-
-	for !next() {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-ticker.C:
-			continue
-		}
-	}
-
-	msg := kschema.RawMessage(r.topic, Offset(key), key, value)
-	return &msg, nil
+func (r *Reader) Close() error {
+	return nil
 }
 
 // ensure we implement the full interface
