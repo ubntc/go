@@ -9,9 +9,15 @@ import (
 
 type Message struct{ kafka.Message }
 
+func (m *Message) Offset() uint64 {
+	if m.Message.Offset < 0 {
+		panic("negative offset")
+	}
+	return uint64(m.Message.Offset)
+}
+
 func (m *Message) Key() []byte   { return m.Message.Key }
 func (m *Message) Value() []byte { return m.Message.Value }
-func (m *Message) Offset() int64 { return m.Message.Offset }
 func (m *Message) Topic() string { return m.Message.Topic }
 func (m *Message) String() string {
 	if m == nil {

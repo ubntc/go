@@ -1,26 +1,19 @@
 package kafkago
 
 import (
-	"log"
+	"errors"
 	"regexp"
 	"strconv"
 
 	"github.com/segmentio/kafka-go"
-	"github.com/ubntc/go/kstore/provider/api"
 )
 
-func NewLogger(name string) api.LoggerFunc {
-	return func(format string, args ...any) {
-		log.Printf(name+": "+format, args...)
-		log.Println()
-	}
-}
-
-func NilLogger() api.LoggerFunc {
-	return func(format string, args ...any) {}
-}
-
 var reKafkaErrorCode = regexp.MustCompile(`^\[[0-9]+\]`)
+
+var (
+	ErrOffsetRequired = errors.New("offset required")
+	ErrInvalidOffset  = errors.New("invalid offset")
+)
 
 func KafkaError(err error) kafka.Error {
 	if err == nil {

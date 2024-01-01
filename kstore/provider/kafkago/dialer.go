@@ -6,6 +6,7 @@ import (
 
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl/plain"
+	"github.com/ubntc/go/kstore/kstore"
 	"github.com/ubntc/go/kstore/kstore/config"
 )
 
@@ -42,7 +43,7 @@ func readerConfig(cfg *config.KeyFile, topic string, group config.Group) kafka.R
 		Topic:          topic,
 		GroupTopics:    group.Topics, // used only for group management
 		Dialer:         dialer,
-		Logger:         kafka.LoggerFunc(NilLogger()),
+		Logger:         kafka.LoggerFunc(kstore.NilLogger()),
 		IsolationLevel: kafka.ReadCommitted,
 		StartOffset:    kafka.FirstOffset, // start from the beginning for new groupID
 		CommitInterval: 0,                 // use sync commits
