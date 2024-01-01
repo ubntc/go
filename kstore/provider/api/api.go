@@ -20,34 +20,47 @@ type (
 	Message interface {
 		Key() []byte
 		Value() []byte
-		Offset() int64
+		Offset() uint64
 		Topic() string
 		String() string
 	}
 
 	Reader interface {
+		// Commit marks a message as successfully consumed.
 		Commit(ctx context.Context, msg Message) error
+
+		// Read returns the next message in the stream. This should be a blocking operation that
+		// should be managed through the given context.
 		Read(ctx context.Context) (Message, error)
+
+		// Close closes the reader and releases any resources associated with it.
 		Close() error
 	}
 
 	Writer interface {
+		// Write writes one or more messages.
 		Write(ctx context.Context, topic string, msg ...Message) error
+
+		// Close closes the writer and releases any resources associated with it.
 		Close() error
 	}
 
 	Client interface {
-		// direct client actions
+		// topic management actions
 
 		CreateTopics(ctx context.Context, topics ...string) (TopicErrors, error)
 		DeleteTopics(ctx context.Context, topics ...string) (TopicErrors, error)
-		Write(ctx context.Context, topic string, msg ...Message) error
 		Close() error
 
-		// derivded clients
+		// reading and writing
 
 		NewReader(topic string) Reader
 		NewWriter() Writer
+
+		// low-level reading and writing
+
+		Write(ctx context.Context, topic string, msg ...Message) error
+		Read(ctx context.Context, topic string, partition int, offset *uint64) (Message, error)
 
 		// convenience funcs
 
