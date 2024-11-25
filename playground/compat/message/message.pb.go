@@ -198,7 +198,7 @@ func file_message_message_proto_rawDescGZIP() []byte {
 
 var file_message_message_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_message_message_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_message_message_proto_goTypes = []interface{}{
+var file_message_message_proto_goTypes = []any{
 	(Type)(0),                     // 0: message.Type
 	(*Msg)(nil),                   // 1: message.Msg
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
@@ -223,7 +223,7 @@ func file_message_message_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_message_message_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_message_message_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Msg); i {
 			case 0:
 				return &v.state

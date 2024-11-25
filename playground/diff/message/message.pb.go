@@ -205,7 +205,7 @@ func file_playground_diff_message_message_proto_rawDescGZIP() []byte {
 }
 
 var file_playground_diff_message_message_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_playground_diff_message_message_proto_goTypes = []interface{}{
+var file_playground_diff_message_message_proto_goTypes = []any{
 	(*Sub)(nil),                   // 0: message.Sub
 	(*Msg)(nil),                   // 1: message.Msg
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
@@ -231,7 +231,7 @@ func file_playground_diff_message_message_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_playground_diff_message_message_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_playground_diff_message_message_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Sub); i {
 			case 0:
 				return &v.state
@@ -243,7 +243,7 @@ func file_playground_diff_message_message_proto_init() {
 				return nil
 			}
 		}
-		file_playground_diff_message_message_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_playground_diff_message_message_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*Msg); i {
 			case 0:
 				return &v.state

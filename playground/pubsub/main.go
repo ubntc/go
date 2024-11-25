@@ -33,7 +33,8 @@ func main() {
 		Broker: b,
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 
 	fmt.Println("Starting Broker")
 	go b.Run(ctx)

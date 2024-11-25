@@ -15,7 +15,6 @@ import (
 type Map map[string]string
 
 func TestFunc(t *testing.T) {
-
 	var (
 		null        *message.Msg
 		empty       = &message.Msg{}

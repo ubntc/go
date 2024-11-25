@@ -1,13 +1,10 @@
 # Worker Behavior and Worker Scaling
 
-------
-
 **⚠️ Attention ⚠️**
 
 Benchmarks are outdated and also a test against a non-batching naive streaming implementation is missing.
 
-------
-
+---
 
 Batbq uses a blocking [`worker`](worker.go) to read data from the input channel into batches.
 The worker will NOT stop reading data if the `Putter` or the message confirmation is stalled.

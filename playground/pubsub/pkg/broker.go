@@ -27,13 +27,13 @@ func NewBroker() *Broker {
 }
 
 // Send is used by message publishers to add new messages on the broker.
-func (b *Broker) Send(message string) error {
+func (b *Broker) Send(msg string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.messages = append(b.messages, message)
-	fmt.Printf("added message %s, len = %d\n", message, len(b.messages))
-	b.newMessage <- message
+	b.messages = append(b.messages, msg)
+	fmt.Printf("added message %s, len = %d\n", msg, len(b.messages))
+	b.newMessage <- msg
 	return nil
 }
 
@@ -64,11 +64,11 @@ func (b *Broker) Run(ctx context.Context) {
 			}
 			b.mu.Unlock()
 
-		case cons := <-b.newConsumer:
+		case c := <-b.newConsumer:
 			b.mu.Lock()
 			fmt.Println("backfilling new consumer")
 			for _, msg := range b.messages {
-				cons.Receive(msg)
+				c.Receive(msg)
 			}
 			fmt.Println("backfill finished")
 			b.mu.Unlock()

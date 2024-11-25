@@ -4,15 +4,42 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"time"
 )
 
-var clearString = "\r" + strings.Repeat(" ", 100) + "\r"
+// MessageDisplay displays messages.
+type MessageDisplay struct {
+	Messages chan string
 
-// demo runtime
-var runTime = flag.Duration("t", 3*time.Second, "runtime of the demo")
+	nextMsg    string
+	currentMsg string
+}
+
+// Display displays incoming messages until the closing of the context.
+func (d *MessageDisplay) Display(ctx context.Context) {
+	ticker := time.Tick(100 * time.Millisecond)
+	for {
+		select {
+		case <-ticker:
+			fmt.Print(d.ClearString() + d.nextMsg)
+		case d.nextMsg = <-d.Messages:
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// Close clears and closes the display.
+func (d *MessageDisplay) Close() {
+	fmt.Print(d.ClearString())
+}
+
+// ClearString returns a string that clears the current message without creating a new line.
+func (d *MessageDisplay) ClearString() string {
+	return "\r" + strings.Repeat(" ", len(d.currentMsg)) + "\r"
+}
 
 // demo function to produce messages
 func sendMsg(ctx context.Context, ch chan<- string) {
@@ -23,30 +50,7 @@ func sendMsg(ctx context.Context, ch chan<- string) {
 	}
 }
 
-// MessageDisplay displays messages.
-type MessageDisplay struct {
-	Messages chan string
-	message  string
-}
-
-// Display displays incoming messages until the closing of the context.
-func (d *MessageDisplay) Display(ctx context.Context) {
-	ticker := time.Tick(100 * time.Millisecond)
-	for {
-		select {
-		case <-ticker:
-			fmt.Print(clearString + d.message + " ")
-		case d.message = <-d.Messages:
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-// Close closes the display.
-func (d *MessageDisplay) Close() {
-	fmt.Print(clearString)
-}
+var runTime = flag.Duration("t", 3*time.Second, "runtime of the demo")
 
 func main() {
 	flag.Parse()

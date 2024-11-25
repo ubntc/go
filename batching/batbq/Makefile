@@ -1,17 +1,17 @@
-.PHONY: all test cover cover-check example
+.PHONY: ⚙️
 all: test cover example
 
-test:
+test: ⚙️
 	go test -race -timeout 3s ./...
 	go vet ./...
 	go run _examples/ps2bq/main.go -dry
 	go run _examples/simple/main.go -dry
 
-cover:
+cover: ⚙️
 	../../scripts/cover.sh ./...
 
-cover-check: cover
+cover-check: ⚙️
 	go tool cover -html=.cache/cover.profile
 
-example:
+example: ⚙️
 	go run ../../scripts/code_include.go README.md

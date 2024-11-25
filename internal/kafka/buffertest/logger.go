@@ -1,3 +1,3 @@
 package buffertest
 
-type Map map[string]interface{}
+type Map map[string]any

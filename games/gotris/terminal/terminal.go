@@ -87,13 +87,13 @@ func (t *Terminal) ClearString() string {
 }
 
 // Print prints the values to the terminal's file descriptor.
-func (t *Terminal) Print(values ...interface{}) {
+func (t *Terminal) Print(values ...any) {
 	fmt.Fprint(t.stdout, values...)
 }
 
 // Println prints the values to the terminal's file descriptor ending with a new line
 // and an additional carriage return "\r", to produce valid lines on raw terminals.
-func (t *Terminal) Println(values ...interface{}) {
+func (t *Terminal) Println(values ...any) {
 	fmt.Fprint(t.stdout, values...)
 	fmt.Fprintln(t.stdout)
 	fmt.Fprint(t.stdout, "\r") // needed for raw terminals

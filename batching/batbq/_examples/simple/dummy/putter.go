@@ -24,7 +24,7 @@ type Putter struct {
 }
 
 // Put stores dummy data.
-func (p *Putter) Put(ctx context.Context, src interface{}) error {
+func (p *Putter) Put(ctx context.Context, src any) error {
 	rows := src.([]bigquery.ValueSaver)
 	time.Sleep(p.WriteDelay)
 	p.Lock()

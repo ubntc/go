@@ -22,7 +22,7 @@ type Game struct {
 
 	GameOverScreenDuration time.Duration
 
-	Message map[string]interface{}
+	Message map[string]any
 
 	CaptureInput bool
 

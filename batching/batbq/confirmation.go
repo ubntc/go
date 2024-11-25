@@ -51,7 +51,7 @@ func handleErrors(messages []Message, err error) (index map[int]struct{}) {
 			m.Nack(nil)
 			nacked[i] = struct{}{}
 		}
-	case err != nil:
+	default:
 		// another error happened, forward it with the Nack to allow handling upstream
 		for i, m := range messages {
 			m.Nack(err)

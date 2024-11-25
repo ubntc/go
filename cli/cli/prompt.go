@@ -5,7 +5,7 @@ import (
 )
 
 // Prompt sets the global prompt message displayed in the interactive log line.
-func Prompt(format string, v ...interface{}) {
+func Prompt(format string, v ...any) {
 	msg := fmt.Sprintf(format, v...)
 	t := GetTerm()
 	if t.IsDebug() {
@@ -15,11 +15,11 @@ func Prompt(format string, v ...interface{}) {
 }
 
 // PromptVerbose sets the global prompt message if in debug mode.
-func PromptVerbose(format string, v ...interface{}) {
+func PromptVerbose(format string, v ...any) {
 	debug(format, v...)
 }
 
-func debug(format string, v ...interface{}) {
+func debug(format string, v ...any) {
 	if GetTerm().IsVerbose() {
 		Prompt(format, v...)
 	}

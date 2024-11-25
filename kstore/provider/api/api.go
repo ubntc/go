@@ -8,7 +8,7 @@ import (
 
 type (
 	TopicErrors map[string]error
-	LoggerFunc  func(string, ...interface{})
+	LoggerFunc  func(string, ...any)
 
 	// Message defines the common interface for persistence messages send to and received from
 	// the storage backend.

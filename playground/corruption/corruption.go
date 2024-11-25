@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -76,7 +75,7 @@ func check(wg *sync.WaitGroup) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println(r)
-			debug.PrintStack()
+			// debug.PrintStack()
 			results <- PanicError
 		}
 	}()

@@ -11,7 +11,7 @@ import (
 
 // Putter provides a `Put` func as used by the `bigquery.Inserter`.
 type Putter interface {
-	Put(ctx context.Context, src interface{}) error
+	Put(ctx context.Context, src any) error
 }
 
 // InsertBatcher implements automatic batching with a batch capacity and flushInterval.

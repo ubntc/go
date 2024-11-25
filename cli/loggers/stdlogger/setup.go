@@ -13,7 +13,7 @@ const (
 )
 
 // colored returns a colored string.
-func colored(s interface{}, c int) string {
+func colored(s any, c int) string {
 	return fmt.Sprintf("\x1b[%dm%v\x1b[0m", c, s)
 }
 

@@ -91,7 +91,7 @@ Also see the [PubSub to BigQuery](_examples/ps2bq/main.go) example.
 
 The package provides an `InsertBatcher` that requires an `input <-chan batbq.Message` to collect
 individual messages from a streaming data source as shown in the [examples](_examples).
-The `InsertBatcher` also requires a `Putter` that implements `Put(context.Context, interface{})`
+The `InsertBatcher` also requires a `Putter` that implements `Put(context.Context, any)`
 as provided by the regular `bigquery.Inserter`. Messages that are `Put` into the `bigquery.Inserter`
 need to implement the `bigquery.ValueSaver`.
 
