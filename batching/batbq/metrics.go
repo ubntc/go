@@ -8,8 +8,8 @@ import (
 
 // metrics prefix and label name
 const (
-	BATBQ   = "batbq"
-	BATCHER = "batcher"
+	Batbq   = "batbq"
+	Batcher = "batcher"
 )
 
 // Metrics stores Batcher Metrics.
@@ -33,9 +33,9 @@ type Metrics struct {
 func NewMetrics(prefix ...string) *Metrics {
 	ns := strings.Join(prefix, "_")
 	if len(ns) == 0 {
-		ns = BATBQ
+		ns = Batbq
 	}
-	label := []string{BATCHER}
+	label := []string{Batcher}
 	return &Metrics{
 		// State
 		NumWorkers: prometheus.NewGaugeVec(prometheus.GaugeOpts{

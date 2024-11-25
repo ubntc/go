@@ -13,7 +13,7 @@ import (
 	xterm "golang.org/x/term"
 )
 
-// Term stores shared terminal state about loggers, the underlying terminals, and commands.
+// Term stores shared terminal state for loggers, the underlying terminals, and commands.
 type Term struct {
 	out        io.Writer
 	debug      bool
@@ -111,7 +111,7 @@ func (c *Term) SetOutput(w io.Writer) {
 // var reLineEnd = regexp.MustCompile("\n$")
 var (
 	rePendingNL   = regexp.MustCompile("[^\n]*$")
-	reStartCR     = regexp.MustCompile("[\r]*")
+	reStartCR     = regexp.MustCompile("^[\r]*")
 	reNLCR        = regexp.MustCompile("[\n\r]*")
 	reNLWithoutCR = regexp.MustCompile("[\n][^\r]*")
 )
@@ -264,7 +264,7 @@ func (c *Term) IsRaw() bool {
 
 // StartClock starts the terminal clock to ingest clock output into the status line.
 func (c *Term) StartClock(ctx context.Context) {
-	PromptVerbose("starting clock")
+	debug("starting clock")
 	interval := 100 * time.Millisecond
 	ticker := time.NewTicker(interval)
 	for {
@@ -275,7 +275,7 @@ func (c *Term) StartClock(ctx context.Context) {
 				c.Prompt(dt.digital, c.GetMessage(), dt.analog, "")
 			}
 		case <-ctx.Done():
-			PromptVerbose("clock stopped")
+			debug("clock stopped")
 			c.Prompt("")
 			return
 		}

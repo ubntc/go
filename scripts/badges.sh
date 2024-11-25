@@ -1,10 +1,10 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 set -e
 
 coverage() {
-    if test -e $prefix.profile; then
-        go tool cover -func $prefix.profile -o $prefix.txt
-        tail -n1 $prefix.txt | grep -o '[0-9]\+' | head -n1
+    if test -e "$prefix.profile"; then
+        go tool cover -func "$prefix.profile" -o "$prefix.txt"
+        tail -n1 "$prefix.txt" | grep -o '[0-9]\+' | head -n1
     fi
 }
 

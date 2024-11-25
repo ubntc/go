@@ -16,6 +16,10 @@ func Prompt(format string, v ...interface{}) {
 
 // PromptVerbose sets the global prompt message if in debug mode.
 func PromptVerbose(format string, v ...interface{}) {
+	debug(format, v...)
+}
+
+func debug(format string, v ...interface{}) {
 	if GetTerm().IsVerbose() {
 		Prompt(format, v...)
 	}

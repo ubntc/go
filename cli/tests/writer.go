@@ -71,7 +71,7 @@ lines:
 		}
 	}
 	if len(s) < tfLen {
-		return time.Time{}, fmt.Errorf("time string to short: s='%s', line='%s'", s, line)
+		return time.Time{}, fmt.Errorf("time string too short: s='%s', line='%s'", s, line)
 	}
 	return time.Parse(cli.TimeFormatHuman, s[:tfLen])
 }

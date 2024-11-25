@@ -37,48 +37,48 @@ func (s *Server) Serve(ctx context.Context) {
 			zlog.Info().Msg("server stopped")
 			return
 		case <-time.After(s.logInterval):
-			s.Status()
+			s.Status(ctx)
 		}
 	}
 }
 
-func (s *Server) Status() {
+func (s *Server) Status(context.Context) {
 	zlog.Info().Str("status", s.status).Msg("zlog: server status")
 	log.Println("log:  server status", s.status)
 	fmt.Println("fmt:  server status", s.status)
 }
 
-func (s *Server) PrintStatus() {
+func (s *Server) PrintStatus(context.Context) {
 	fmt.Println("server", s.status)
 }
 
 // Shutdown waits for the server to stop.
-func (s *Server) Shutdown() {
+func (s *Server) Shutdown(context.Context) {
 	s.Wait()
 }
 
-func fmtPrint() {
+func fmtPrint(context.Context) {
 	fmt.Println("fmt.Println single-line")
 	fmt.Println("fmt.Println\nmulti-\nline")
 }
 
-func logPrint() {
+func logPrint(context.Context) {
 	log.Println("log.Println single-line")
 	log.Println("log.Println\nmulti-\nline")
 }
 
-func zeroPrint() {
+func zeroPrint(context.Context) {
 	zlog.Print("log.Println single-line")
 	zlog.Print("log.Println\nmulti-\nline")
 }
 
-func help() {
+func help(context.Context) {
 	fmt.Println(cli.GetCommands().Help())
 }
 
 func main() {
 	var (
-		interactive = flag.Bool("i", false, "interactive mode (⚠ also requires clock, raw, quit, and CR settings ⚠️)")
+		interactive = flag.Bool("i", false, "interactive mode (also required for clock, raw, quit, and CR flags)")
 		useZeroLog  = flag.Bool("z", false, "setup zerolog in interactive mode")
 		stdLog      = flag.Bool("s", false, "setup stdlog in interactive mode")
 
@@ -101,6 +101,9 @@ func main() {
 	var cmds cli.Commands
 	cfg := config.Server()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	if *interactive {
 		cmds = []cli.Command{
 			{Name: "fmt.Print", Key: 'f', Fn: fmtPrint},
@@ -116,7 +119,15 @@ func main() {
 		cfg.ShowClock = *showClock
 		cfg.PrependCR = *crFix
 		cfg.MakeTermRaw = *rawTerm
+
 		cfg.WithQuit = *useQuit
+
+		if !cfg.WithQuit {
+			cmds = append(cmds, cli.Command{
+				Name: "custom quit", Key: 'q',
+				Fn: func(context.Context) { cancel() },
+			})
+		}
 
 		if *useZeroLog {
 			cli.SetupLogging(zerologger.Setup)
@@ -132,11 +143,11 @@ func main() {
 		log.Println("setting standard logger to UTC")
 	}
 
-	ctx, cancel := cli.StartTerm(context.Background(), cfg, cmds...)
-	defer cancel()
+	tctx, tcancel := cli.StartTerm(ctx, cfg, cmds...)
+	defer tcancel()
 
-	go srv.Serve(ctx)
+	go srv.Serve(tctx)
 
 	<-ctx.Done()
-	srv.Shutdown()
+	srv.Shutdown(tctx)
 }

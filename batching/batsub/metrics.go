@@ -8,8 +8,8 @@ import (
 
 // metrics prefix and label
 const (
-	BATSUB       = "batsub"
-	SUBSCRIPTION = "subscription"
+	Batsub       = "batsub"
+	Subscription = "subscription"
 )
 
 // Metrics stores Batcher Metrics.
@@ -29,9 +29,9 @@ type Metrics struct {
 func NewMetrics(prefix ...string) *Metrics {
 	ns := strings.Join(prefix, "_")
 	if len(ns) == 0 {
-		ns = BATSUB
+		ns = Batsub
 	}
-	label := []string{SUBSCRIPTION}
+	label := []string{Subscription}
 	return &Metrics{
 		// State
 		PendingMessages: prometheus.NewGaugeVec(prometheus.GaugeOpts{

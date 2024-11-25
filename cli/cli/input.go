@@ -100,10 +100,10 @@ func InputChan(file *os.File) <-chan rune {
 				return
 			}
 			if err != nil {
-				PromptVerbose("reader stopped")
+				debug("reader stopped")
 				return
 			}
-			PromptVerbose("read char: %q", char)
+			debug("read char: %q", char)
 			ch <- char
 		}
 	}()
@@ -112,6 +112,9 @@ func InputChan(file *os.File) <-chan rune {
 
 // ProcessInput reads runes from input chan and executes the `commands` mapped to the received input keys.
 func ProcessInput(ctx context.Context, file *os.File, commands Commands, termMakeRaw bool) {
+	debug("start processing input")
+	defer debug("input processing stopped")
+
 	// when reading from stdin, acquire raw terminal input and make ProcessInput wait for terminal after cleanup
 	if file == os.Stdin && termMakeRaw {
 		restore, err := ClaimTerminal()
@@ -119,7 +122,7 @@ func ProcessInput(ctx context.Context, file *os.File, commands Commands, termMak
 			defer restore() // nolint
 		}
 		if err != nil {
-			PromptVerbose("failed to claim terminal, error=%s", err.Error())
+			debug("failed to claim terminal, error=%s", err.Error())
 		}
 	}
 
@@ -133,7 +136,7 @@ func ProcessInput(ctx context.Context, file *os.File, commands Commands, termMak
 	for {
 		select {
 		case <-ctx.Done():
-			PromptVerbose("Quit (context done).")
+			debug("Quit (context done).")
 			return
 		case <-time.After(time.Second):
 			if len(prompt) > 0 {
@@ -143,7 +146,7 @@ func ProcessInput(ctx context.Context, file *os.File, commands Commands, termMak
 		case char, more = <-input:
 			if !more {
 				<-ctx.Done()
-				PromptVerbose("Quit (input closed + context done).")
+				debug("Quit (input closed + context done).")
 				return
 			}
 			if cmd := commands.Get(char); cmd != nil {

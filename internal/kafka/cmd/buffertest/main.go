@@ -5,7 +5,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/ubntc/go/cli/loggers/zerologger"
-	bt "github.com/ubntc/go/kafka/internal/buffertest"
+	bt "github.com/ubntc/go/internal/kafka/buffertest"
 )
 
 func main() {

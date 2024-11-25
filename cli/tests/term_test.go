@@ -59,7 +59,7 @@ func TestCommandsWithClock(t *testing.T) {
 	defer pcancel()
 
 	cmds := cli.Commands{
-		{Name: "cancel", Key: 'c', Fn: func() { pcancel() }},
+		{Name: "cancel", Key: 'c', Fn: func(context.Context) { pcancel() }},
 	}
 
 	term, release := cli.AcquireTerm()

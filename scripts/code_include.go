@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -5,8 +6,8 @@ package main
 import (
 	"errors"
 	"flag"
-	"io/ioutil"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -52,7 +53,7 @@ func main() {
 	file := flag.String("file", "README.md", "source and target file name")
 	flag.Parse()
 
-	text, err := ioutil.ReadFile(*file)
+	text, err := os.ReadFile(*file)
 	exitOnError(err)
 
 	input := strings.Split(string(text), "\n")
@@ -72,7 +73,7 @@ func main() {
 		exitOnError(errors.New("failed to find code include"))
 	}
 
-	inc, err := ioutil.ReadFile(parseInclude(input[start]))
+	inc, err := os.ReadFile(parseInclude(input[start]))
 	exitOnError(err)
 	code := strings.Split(string(inc), "\n")
 
@@ -85,6 +86,6 @@ func main() {
 
 	output := strings.Join(out, "\n")
 	// println(output)
-	err = ioutil.WriteFile(*file, []byte(output), 0644)
+	err = os.WriteFile(*file, []byte(output), 0644)
 	exitOnError(err)
 }

@@ -1,4 +1,6 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
+# shellcheck disable=SC2086
+
 set -e
 
 # testpkg tests a given `pkg` using the package's `Makefile` or directly using `go test` and `go vet`.
@@ -19,10 +21,11 @@ testpkg() {
         else tests="./$pkg/...";  echo "found subpackage '$pkg', running subpackage tests";
         fi
 
-        mkdir -p .cache
-        prefix=.cache/"$pkg"
+        prefix=".cache/$pkg"
+        mkdir -p "$(dirname "$prefix")"
         test -z "$GOTEST_ARGS" || echo "using GOTEST_ARGS=$GOTEST_ARGS as additional go test arguments"
-        run go test -race $GOTEST_ARGS $tests 2>&1 | tee $prefix.log
+        touch "$prefix.log"
+        run go test -race $GOTEST_ARGS $tests 2>&1 | tee "$prefix.log"
         run go vet $tests
     fi
 
@@ -35,4 +38,4 @@ testpkg() {
 # run prints a command before running it, similar to how `make` echos commands.
 run() { echo "$*"; "$@"; }
 
-for pkg in $*; do testpkg "$pkg"; done
+for pkg in "$@"; do testpkg "$pkg"; done

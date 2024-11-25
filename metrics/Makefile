@@ -1,7 +1,7 @@
-.PHONY: all cover test
-all: test cover
-cover:
+.PHONY: ⚙️
+all: ⚙️ test cover
+cover: ⚙️
 	../scripts/cover.sh ./...
 
-test:
+test: ⚙️
 	go test -race ./...

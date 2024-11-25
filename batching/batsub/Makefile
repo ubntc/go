@@ -1,12 +1,12 @@
-.PHONY: all test cover cover-check
-all: test cover
+.PHONY: ⚙️
+all: ⚙️ test cover
 
-test:
+test: ⚙️
 	go test -race -timeout 3s ./...
 	go vet ./...
 
-cover:
+cover: ⚙️
 	../../scripts/cover.sh ./...
 
-cover-check: cover
+cover-check: ⚙️ cover
 	go tool cover -html=.cache/cover.profile

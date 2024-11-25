@@ -28,7 +28,7 @@ type BatchedSubscription struct {
 	metrics       *Metrics
 }
 
-// NewBatchedSubscription returns an initalized BatNewBatchedSubscription.
+// NewBatchedSubscription returns an initalized BatchedSubscription.
 func NewBatchedSubscription(receiver Receiver, opt ...Option) *BatchedSubscription {
 	b := &BatchedSubscription{Receiver: receiver}
 	for _, o := range opt {
@@ -50,28 +50,27 @@ type BatchFunc func(ctx context.Context, messages []*pubsub.Message)
 //
 // Basic Example:
 //
-// err := sub.ReceiveBatches(ctx, func(ctx context.Context, messages []*pubsub.Message){
-//     for i, m := range messages {
-//         // TODO: handle message
-//	       m.Ack()
-//     }
-// })
+//	err := sub.ReceiveBatches(ctx, func(ctx context.Context, messages []*pubsub.Message){
+//	    for i, m := range messages {
+//	        // TODO: handle message
+//		       m.Ack()
+//	    }
+//	})
 //
 // Batch Processing Example:
 //
 // err := sub.ReceiveBatches(ctx, func(ctx context.Context, messages []*pubsub.Message){
 //
-//     // handle batch of messages using a batch-processing library
-//     errors := mylib.BatchProcessMessages(messages)
-//     for i, err := errors {
-//         if err != nil {
-//             // TODO: handle error
-//             continue
-//         }
-//         messages[i].Ack()
-//     }
-// })
-//
+//	    // handle batch of messages using a batch-processing library
+//	    errors := mylib.BatchProcessMessages(messages)
+//	    for i, err := errors {
+//	        if err != nil {
+//	            // TODO: handle error
+//	            continue
+//	        }
+//	        messages[i].Ack()
+//	    }
+//	})
 func (sub *BatchedSubscription) ReceiveBatches(ctx context.Context, f BatchFunc) error {
 	ch := make(chan *pubsub.Message, sub.capacity)
 	var wg sync.WaitGroup
@@ -90,7 +89,6 @@ func (sub *BatchedSubscription) ReceiveBatches(ctx context.Context, f BatchFunc)
 
 		var batch []*pubsub.Message
 		flush := func() {
-			t := time.Now()
 			if len(batch) == 0 {
 				return
 			}
@@ -99,7 +97,7 @@ func (sub *BatchedSubscription) ReceiveBatches(ctx context.Context, f BatchFunc)
 				defer wg.Done()
 				f(ctx, batch)
 				// track progress after batch is completed
-				latency.Observe(time.Now().Sub(t).Seconds())
+				latency.Observe(float64(time.Since(time.Now())))
 				flushed.Add(float64(len(batch)))
 				processed.Add(float64(len(batch)))
 			}(batch)
@@ -112,7 +110,6 @@ func (sub *BatchedSubscription) ReceiveBatches(ctx context.Context, f BatchFunc)
 		defer tick.Stop()
 		for {
 			select {
-
 			case <-tick.C:
 				flush()
 			case msg, more := <-ch:

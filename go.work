@@ -1,0 +1,10 @@
+go 1.23
+
+use (
+	.
+	./batching/batbq
+	./batching/batsub
+	./cli
+	./games/gotris
+	./metrics
+)

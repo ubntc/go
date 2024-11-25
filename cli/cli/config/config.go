@@ -1,8 +1,8 @@
 package config
 
 type Config struct {
-	ShowClock   bool // WithClock disabled the default ascii/unicode clock in the last terminal line.
-	WithQuit    bool // WithQuit add the default quit commands and enables user input.
+	ShowClock   bool // ShowClock enables the default ascii/unicode clock in the last terminal line.
+	WithQuit    bool // WithQuit adds the default quit commands and enables user input.
 	PrependCR   bool
 	MakeTermRaw bool
 }

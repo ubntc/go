@@ -30,11 +30,11 @@ func (s *Server) Serve(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			s.SetStatus("dead")
-			s.LogStatus()
+			s.LogStatus(ctx)
 			return
 		case <-time.After(s.logInterval):
 			s.SetStatus("active")
-			s.LogStatus()
+			s.LogStatus(ctx)
 			time.Sleep(s.logInterval / 5)
 		}
 	}
@@ -53,13 +53,13 @@ func (s *Server) SetStatus(status string) {
 }
 
 // LogStatus logs the server status.
-func (s *Server) LogStatus() {
+func (s *Server) LogStatus(context.Context) {
 	s.RLock()
 	defer s.RUnlock()
 	log.Print("server is " + s.status)
 }
 
-func help() {
+func help(context.Context) {
 	t := cli.GetTerm()
 	t.SetMessage(cli.GetCommands().String())
 	t.Println(cli.GetCommands().Help())

@@ -29,7 +29,7 @@ func TestProcessInput(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
 
 	cmds := []cli.Command{
-		{Name: "command", Key: 'c', Fn: func() { cancel() }},
+		{Name: "command", Key: 'c', Fn: func(context.Context) { cancel() }},
 	}
 
 	f, remove := TempFile(t, "cx")

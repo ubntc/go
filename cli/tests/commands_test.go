@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,8 +32,8 @@ func TestCommands(t *testing.T) {
 func TestCustomCommands(t *testing.T) {
 	var numCalls int
 	cmds := []cli.Command{
-		{Name: "func1", Key: 'a', Fn: func() { numCalls += 10 }},
-		{Name: "func2", Key: 'f', Fn: func() { numCalls += 100 }},
+		{Name: "func1", Key: 'a', Fn: func(context.Context) { numCalls += 10 }},
+		{Name: "func2", Key: 'f', Fn: func(context.Context) { numCalls += 100 }},
 	}
 	cli.SetCommands(cmds)
 	cli.GetCommands().RunScript("af")

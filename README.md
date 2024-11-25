@@ -2,14 +2,15 @@
 
 This repository hosts the following projects.
 
-## [Go-cli: ubntc/go/cli](/cli)
+## [Go-cli](/cli)
 Basic CLI-enhancements for your Go-services, incl. input commands, human-friendly logging, and
 OS-signal handling.
 
-## [BatBq: ubntc/go/batchers/batbq](/batching/batbq)
-Capacity and interval-based batch writing of rows to BigQuery.
+## [BatBq](/batching/batbq)
+Capacity and interval-based batch writing of rows to BigQuery. \
+PoC, not maintained, use BQs new [Storage API](https://www.google.com/search?q=bigquery+storage+API) instead.
 
-## [BatSub: ubntc/go/batchers/batsub](/batching/batsub)
+## [BatSub](/batching/batsub)
 Capacity and interval-based batch reading of PubSub messages.
 
 ## [Go-scripts: ubntc/go/scripts](/scripts)

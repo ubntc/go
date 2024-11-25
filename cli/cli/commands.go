@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -50,7 +51,7 @@ func (c Commands) Info(fn CommandInfoFormatter) []string {
 // Run runs a command or returns a NotFound error.
 func (c Commands) Run(r rune) error {
 	if cmd := c.Get(r); cmd != nil {
-		cmd.Run()
+		cmd.Run(context.Background()) // TODO: cancel with parent
 		return nil
 	}
 	return fmt.Errorf("Command not found for Key=%q", r)
@@ -88,7 +89,10 @@ func GetCommands() Commands {
 }
 
 // QuitCommands returns quit commands.
-func QuitCommands(fn func()) Commands {
+func QuitCommands(done func()) Commands {
+	fn := func(context.Context) {
+		done()
+	}
 	return Commands{
 		Command{"quit", 'q', fn},
 		Command{"quit", 'Q', fn},

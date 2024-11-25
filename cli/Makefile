@@ -1,10 +1,10 @@
-.PHONY: all clean test debug resources done cover cover-check
-all: test cover resources
+.PHONY: ⚙️
+all: ⚙️ test cover resources
 
-clean:
+clean: ⚙️
 	rm resources/go-cli*.cast resources/go-cli*.svg .cache/cover*
 
-test:
+test: ⚙️
 	go test -race -timeout 3s ./...
 	go vet ./...
 	# INTERACTIVE MODE TEST
@@ -12,18 +12,18 @@ test:
 	# NON-INTERACTIVE MODE TEST
 	echo 1 | go run -race tests/cmd/rawtest.go
 
-debug:
+debug: ⚙️
 	go test -race -failfast -v -timeout 3s ./...
 
-done:
+done: ⚙️
 	# marks demo files as new to avoid regeneration
 	touch resources/go-cli-*
 
-resources:
+resources: ⚙️
 	$(MAKE) -C $@
 
-cover:
+cover: ⚙️
 	../scripts/cover.sh cli loggers
 
-cover-check: cover
+cover-check: ⚙️ cover
 	go tool cover -html=.cache/cover.profile

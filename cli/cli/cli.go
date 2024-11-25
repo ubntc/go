@@ -11,6 +11,13 @@ import (
 	"github.com/ubntc/go/cli/cli/config"
 )
 
+func newSigChan() <-chan os.Signal {
+	// size > 1 makes the channel non-blocking
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	return sig
+}
+
 // SigWait waits for OS signals SIGINT or SIGTERM or the termination of the given context.
 // It blocks until the context is canceled either by the awaited signal or externally.
 // It returns the received signal and the context's error.
@@ -25,9 +32,7 @@ import (
 //		 sig, err := cli.SigWait(ctx)
 //		 fmt.Println("stopping application")
 func SigWait(ctx context.Context) (os.Signal, error) {
-	// size > 1 makes the channel non-blocking
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	sig := newSigChan()
 	var s os.Signal
 
 	// block until signal is received or context is cancelled
@@ -48,8 +53,7 @@ func SigWait(ctx context.Context) (os.Signal, error) {
 // and returns a context.Context to manage the corresponding goroutines or running i/o pipes.
 // It cancels the context on receiving a SIGINT or SIGTERM from the OS.
 func StartTerm(parent context.Context, cfg config.Config, cmds ...Command) (context.Context, context.CancelFunc) {
-	sig := make(chan os.Signal, 1) // non-blocking
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	sig := newSigChan()
 	input := os.Stdin
 	// var interactive bool
 
@@ -84,9 +88,7 @@ func StartTerm(parent context.Context, cfg config.Config, cmds ...Command) (cont
 		go func() {
 			defer wg.Done()
 			defer stopClock()
-			PromptVerbose("clock started")
 			GetTerm().StartClock(clockCtx) // blocking
-			PromptVerbose("clock finished")
 		}()
 	}
 
@@ -114,31 +116,32 @@ func StartTerm(parent context.Context, cfg config.Config, cmds ...Command) (cont
 		go func() {
 			defer wg.Done()
 			defer stopReadingInput()
-			PromptVerbose("user input started")
 			ProcessInput(inputCtx, input, GetCommands(), cfg.MakeTermRaw) // blocking
-			PromptVerbose("user input finished")
 		}()
 	}
 
 	go func() {
 		defer func() {
-			cancel()           // cancel the exposed context only after all cleanup is done
-			stopReadingInput() // ensure inputCtx is canceled
-			stopClock()        // ensure clockCtx is canceled
+			cancel() // cancel the exposed context
+			debug("main context cancelled")
+
+			stopReadingInput() // ensure inputCtx is also canceled
+			stopClock()        // ensure clockCtx is also canceled
 			restoreStdio()     // ensure os.Stderr and os.Stderr are restored
-			PromptVerbose("wait for cleanup")
+
+			debug("wait for cleanup")
 			wg.Wait()
-			PromptVerbose("cleanup finished")
+			debug("cleanup finished")
 		}()
 		select {
 		case s := <-sig:
-			PromptVerbose("stop on signal: %q", s)
+			debug("stop on signal: %q", s)
 		case <-parent.Done():
-			PromptVerbose("stop on closing parent")
+			debug("stop on closing parent")
 		case <-inputCtx.Done():
-			PromptVerbose("stop on closing input")
+			debug("stop on closing input")
 		case <-clockCtx.Done():
-			PromptVerbose("stop on stopped clock")
+			debug("stop on stopped clock")
 		}
 	}()
 
